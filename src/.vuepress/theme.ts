@@ -4,99 +4,62 @@ import navbar from "./navbar.js";
 import sidebar from "./sidebar.js";
 
 export default hopeTheme({
-  hostname: "https://easy-qfnu.top",
-  darkmode: "switch",
+  hostname: "https://vuepress-theme-hope-docs-demo.netlify.app",
+
   author: {
-    name: "W1ndys",
-    url: "https://github.com/W1ndys",
+    name: "Mr.Hope",
+    url: "https://mister-hope.com",
   },
 
-  logo: "./ezqf.svg",
-  docsRepo: "W1ndys/Easy-QFNU",
+  logo: "https://theme-hope-assets.vuejs.press/logo.svg",
+
+  repo: "vuepress-theme-hope/vuepress-theme-hope",
+
   docsDir: "src",
-  docsBranch: "main",
-  repo: "W1ndys/Easy-QFNU",
-  repoLabel: "GitHub",
-  repoDisplay: true,
 
   // 导航栏
   navbar,
+
   // 侧边栏
   sidebar,
+
   // 页脚
-  footer: "Easy-QFNU，让你的QFNU更简单~",
-  copyright: "Copyright © 2024-2025 W1ndys",
-  license: "MIT",
+  footer: "默认页脚",
   displayFooter: true,
+
   // 加密配置
   encrypt: {
     config: {
-      "/EasySelectCourse/CourseSelectionRecommendation/": {
-        password: "GoodGoodStudyDayDayUp",
-        hint: "关注微信公众号【W1ndys】发送【密码】获取",
+      "/demo/encrypt.html": {
+        hint: "Password: 1234",
+        password: "1234",
       },
     },
   },
-  // 导航栏布局
-  navbarLayout: {
-    start: ["Brand"],
-    center: ["Links"],
-    end: ["Repo", "Outlook", "Search"],
+
+  // 多语言配置
+  metaLocales: {
+    editLink: "在 GitHub 上编辑此页",
   },
-  // 打印
-  print: true,
-  // 全屏
-  fullscreen: true,
-  // 是否开启沉浸模式
-  focus: false,
-  // 是否开启纯净模式
-  pure: false,
+
   // 如果想要实时查看任何改变，启用它。注: 这对更新性能有很大负面影响
-  hotReload: true,
-  // 主题Markdown选项
+  // hotReload: true,
+
+  // 此处开启了很多功能用于演示，你应仅保留用到的功能。
   markdown: {
-    // 数学公式
-    math: {
-      type: "mathjax", // 或 'mathjax'
-      output: "svg",
-    },
-    // 启用脚注
-    footnote: true,
-    // 启用下角标
-    sub: true,
-    // 启用上角标
-    sup: true,
-    // 选项卡
-    tabs: true,
-    // 任务列表
-    tasklist: true,
-    // 代码块
-    vPre: true,
-    // 对齐
     align: true,
-    // 属性
     attrs: true,
-    // 代码块标签
     codeTabs: true,
-    // 组件
     component: true,
-    // 演示
     demo: true,
-    // 图片
     figure: true,
-    // 图片懒加载
+    gfm: true,
     imgLazyload: true,
-    // 图片大小
     imgSize: true,
-    // 包含
     include: true,
-    // 标记
     mark: true,
-    // 流程图
     plantuml: true,
-    // 隐藏
     spoiler: true,
-    // 自定义样式
     stylize: [
       {
         matcher: "Recommended",
@@ -110,113 +73,67 @@ export default hopeTheme({
         },
       },
     ],
+    sub: true,
+    sup: true,
+    tabs: true,
+    tasklist: true,
+    vPre: true,
+
+    // 取消注释它们如果你需要 TeX 支持
+    // math: {
+    //   // 启用前安装 katex
+    //   type: "katex",
+    //   // 或者安装 mathjax-full
+    //   type: "mathjax",
+    // },
+
+    // 如果你需要幻灯片，安装 @vuepress/plugin-revealjs 并取消下方注释
+    // revealjs: {
+    //   plugins: ["highlight", "math", "search", "notes", "zoom"],
+    // },
+
     // 在启用之前安装 chart.js
-    // chart: true,
+    // chartjs: true,
+
     // insert component easily
+
     // 在启用之前安装 echarts
     // echarts: true,
+
     // 在启用之前安装 flowchart.ts
     // flowchart: true,
-    // gfm requires mathjax-full to provide tex support
-    // gfm: true,
-    // 在启用之前安装 katex
-    // katex: true,
-    // 在启用之前安装 mathjax-full
-    // mathjax: true,
+
     // 在启用之前安装 mermaid
     // mermaid: true,
+
     // playground: {
     //   presets: ["ts", "vue"],
     // },
-    // 在启用之前安装 reveal.js
-    // revealJs: {
-    //   plugins: ["highlight", "math", "search", "notes", "zoom"],
-    // },
+
     // 在启用之前安装 @vue/repl
     // vuePlayground: true,
-    // install sandpack-vue3 before enabling it
+
+    // 在启用之前安装 sandpack-vue3
     // sandpack: true,
   },
+
   // 在这里配置主题提供的插件
-
   plugins: {
-    // 评论
+    // 注意: 仅用于测试! 你必须自行生成并在生产环境中使用自己的评论服务
     comment: {
-      provider: "Waline",
-      serverURL: "https://comments.easy-qfnu.top",
-      pageview: true,
-      pageSize: 10,
-      // provider: "Giscus",
-      // repo: "W1ndys/Easy-QFNU",
-      // repoId: "R_kgDOLOtv9Q",
-      // category: "Show and tell",
-      // categoryId: "DIC_kwDOLOtv9c4Cd0Rh",
-    },
-    // 通知
-    notice: {
-      config: [
-        {
-          showOnce: true,
-          // fullscreen: true,
-          // confirm: true,
-          path: "/",
-          title: "公告",
-          content:
-            "Easy-QFNU 2.0 版本已上线，界面更加美观流畅，内容正逐步完善中！",
-          actions: [
-            {
-              text: "点我去关注公众号",
-              link: "https://pic1.zhimg.com/80/v2-a42b58d3c6fa27d3ebe03b7090a7cf63.jpeg",
-              type: "primary",
-            },
-            {
-              text: "联系作者",
-              link: "https://qm.qq.com/q/HlOWmsUlCQ",
-              type: "primary",
-            },
-          ],
-        },
-      ],
-    },
-    // 版权
-    copyright: {
-      global: true,
-      disableCopy: false,
-      disableSelection: false,
-      triggerLength: 50,
-    },
-    // 水印
-    watermark: {
-      enabled: true,
-      watermarkOptions: {
-        content: "微信公众号：W1ndys",
-      },
-    },
-    // 搜索
-    slimsearch: true,
-    // 图标
-    icon: {
-      assets: "fontawesome",
+      provider: "Giscus",
+      repo: "vuepress-theme-hope/giscus-discussions",
+      repoId: "R_kgDOG_Pt2A",
+      category: "Announcements",
+      categoryId: "DIC_kwDOG_Pt2M4COD69",
     },
 
-    // 组件
     components: {
       components: ["Badge", "VPCard"],
     },
-    // 返回顶部
-    backToTop: {
-      /**
-       * 显示返回顶部按钮的滚动阈值距离（以像素为单位）
-       *
-       * @default 100
-       */
-      threshold: 500,
-      /**
-       * 是否显示滚动进度
-       *
-       * @default true
-       */
-      progress: true,
+
+    icon: {
+      prefix: "fa6-solid:",
     },
 
     // 如果你需要 PWA。安装 @vuepress/plugin-pwa 并取消下方注释
