@@ -4,12 +4,19 @@ import theme from "./theme.js";
 
 export default defineUserConfig({
   base: "/",
-
   lang: "zh-CN",
-  title: "文档演示",
-  description: "vuepress-theme-hope 的文档演示",
+  title: "QFNUCyberwiki",
+  description:
+    "QFNUCyberwiki",
 
   theme,
+  head: [
+  ],
+
+  // 添加返回顶部插件
+  plugins: [
+
+  ],
 
   // 和 PWA 一起启用
   // shouldPrefetch: false,
