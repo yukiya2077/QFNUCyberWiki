@@ -1,16 +1,6 @@
 ---
-title: 指南
+title: 审核指南
 icon: lightbulb
 ---
 
-## 功能亮点
-
-### Bar
-
-- [baz](bar/baz.md)
-- ...
-
-### Foo
-
-- [ray](foo/ray.md)
-- ...
+[[toc]]
