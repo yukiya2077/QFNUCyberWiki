@@ -1,6 +1,6 @@
 ---
 title: 学习部
-icon: fa-solid fa-study-wired
+icon: fas fa-book
 ---
 
 # 网络部
