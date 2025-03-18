@@ -12,4 +12,9 @@ export default navbar([
     link: "/Study/",
     icon: "fas fa-book",
   },
+  {
+    text: "宣传部",
+    link: "/Publicity/",
+    icon: "fas fa-newspaper",
+  },
 ]);
