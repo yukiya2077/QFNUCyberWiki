@@ -17,4 +17,9 @@ export default navbar([
     link: "/Publicity/",
     icon: "fas fa-newspaper",
   },
+  {
+    text: "权益部",
+    link: "/Rights/",
+    icon: "fas fa-handshake",
+  },
 ]);
