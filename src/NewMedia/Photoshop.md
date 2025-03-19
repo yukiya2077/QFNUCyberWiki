@@ -1,5 +1,5 @@
 ---
-title: 新媒体中心
+title: Photoshop 奇妙之旅：从零变大神！
 icon: camera
 category:
   - 教程

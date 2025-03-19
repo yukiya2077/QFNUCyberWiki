@@ -1,5 +1,5 @@
 ---
-title: 新媒体部
+title: 新媒体
 icon: fas fa-newspaper
 ---
 
