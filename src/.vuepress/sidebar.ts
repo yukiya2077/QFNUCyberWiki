@@ -5,4 +5,5 @@ export default sidebar({
   "/Study/": "structure",
   "/Publicity/": "structure",
   "/Rights/": "structure",
+  "/NewMedia/": "structure",
 });

@@ -22,4 +22,9 @@ export default navbar([
     link: "/Rights/",
     icon: "fas fa-handshake",
   },
+  {
+    text: "新媒体",
+    link: "/NewMedia/",
+    icon: "fas fa-newspaper",
+  },
 ]);
