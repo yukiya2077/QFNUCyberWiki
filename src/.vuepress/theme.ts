@@ -55,6 +55,8 @@ export default hopeTheme({
   hotReload: true,
   // 主题Markdown选项
   markdown: {
+    mermaid: true,
+    flowchart: true,
     // 数学公式
     math: {
       type: "mathjax", // 或 'mathjax'
