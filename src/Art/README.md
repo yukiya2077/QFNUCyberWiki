@@ -1,10 +1,10 @@
 ---
 title: 文艺部
-icon: fas fa-newspaper
+icon: fas fa-music
 ---
 
-# 新媒体
+# 文艺部
 
 <div class="catalog-display-container">
-  <Catalog base="/ArtDepartment/" />
+  <Catalog base="/Art/" />
 </div>

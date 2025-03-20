@@ -1,6 +1,6 @@
 ---
 title: 宿卫部
-icon: fas fa-handshake
+icon: fas fa-bed
 ---
 
 # 宿卫部

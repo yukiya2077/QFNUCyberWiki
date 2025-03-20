@@ -1,6 +1,6 @@
 ---
 title: 体育部
-icon: fas fa-book
+icon: fas fa-futbol
 ---
 
 # 体育部
