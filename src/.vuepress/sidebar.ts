@@ -10,4 +10,5 @@ export default sidebar({
   "/Sports/": "structure",
   "/DormSanitation/": "structure",
   "/MentalHealth/": "structure",
+  "/Office/": "structure",
 });

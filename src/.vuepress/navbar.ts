@@ -47,4 +47,9 @@ export default navbar([
     link: "/MentalHealth/",
     icon: "fas fa-heart",
   },
+  {
+    text: "办公室",
+    link: "/Office/",
+    icon: "fas fa-file-alt",
+  },
 ]);
