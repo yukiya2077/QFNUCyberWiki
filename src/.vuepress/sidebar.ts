@@ -6,4 +6,5 @@ export default sidebar({
   "/Publicity/": "structure",
   "/Rights/": "structure",
   "/NewMedia/": "structure",
+  "/ArtDepartment/": "structure",
 });

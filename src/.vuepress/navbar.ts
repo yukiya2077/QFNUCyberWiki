@@ -27,4 +27,9 @@ export default navbar([
     link: "/NewMedia/",
     icon: "fas fa-newspaper",
   },
+  {
+    text: "文艺部",
+    link: "/ArtDepartment/",
+    icon: "fas fa-music",
+  },
 ]);
