@@ -29,7 +29,7 @@ export default navbar([
   },
   {
     text: "文艺部",
-    link: "/ArtDepartment/",
+    link: "/Art/",
     icon: "fas fa-music",
   },
   {
@@ -42,5 +42,9 @@ export default navbar([
     link: "/DormSanitation/",
     icon: "fas fa-bed",
   },
-  
+  {
+    text: "心理健康部",
+    link: "/MentalHealth/",
+    icon: "fas fa-heart",
+  },
 ]);
