@@ -32,4 +32,15 @@ export default navbar([
     link: "/ArtDepartment/",
     icon: "fas fa-music",
   },
+  {
+    text: "体育部",
+    link: "/Sports/",
+    icon: "fas fa-futbol",
+  },
+  {
+    text: "宿卫部",
+    link: "/DormSanitation/",
+    icon: "fas fa-bed",
+  },
+  
 ]);

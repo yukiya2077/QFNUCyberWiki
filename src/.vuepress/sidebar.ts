@@ -7,4 +7,6 @@ export default sidebar({
   "/Rights/": "structure",
   "/NewMedia/": "structure",
   "/ArtDepartment/": "structure",
+  "/Sports/": "structure",
+  "/DormSanitation/": "structure",
 });
