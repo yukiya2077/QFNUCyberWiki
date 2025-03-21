@@ -57,4 +57,10 @@ export default navbar([
     link: "/SocialPractice/",
     icon: "fas fa-briefcase",
   },
+  {
+    text: "秘书处",
+    link: "/SecretariatOffice/",
+    icon: "fas fa-file-alt",
+  },
+  
 ]);

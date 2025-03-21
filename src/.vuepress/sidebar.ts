@@ -12,4 +12,5 @@ export default sidebar({
   "/MentalHealth/": "structure",
   "/Office/": "structure",
   "/SocialPractice/": "structure",
+  "/SecretariatOffice/": "structure",
 });
