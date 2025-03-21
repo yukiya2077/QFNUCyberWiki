@@ -49,7 +49,7 @@ features:
     details: 负责维护学生权益与服务工作
     link: ./Rights/
 
-  - title: 艺术部
+  - title: 文艺部
     icon: palette
     details: 负责文艺活动策划与组织
     link: ./Art/
@@ -64,7 +64,7 @@ features:
     details: 负责体育活动策划与组织
     link: ./Sports/
 
-  - title: 寝室卫生部
+  - title: 宿卫部
     icon: broom
     details: 负责寝室卫生检查与管理
     link: ./DormSanitation/
@@ -74,9 +74,9 @@ features:
     details: 负责心理健康教育与服务
     link: ./MentalHealth/
 
-  - title: 社会实践部
+  - title: 就业实践部
     icon: people-group
-    details: 负责社会实践活动组织与服务
+    details: 负责就业实践活动组织与服务
     link: ./SocialPractice/
 
 copyright: false
