@@ -21,62 +21,62 @@ actions:
 features:
   - title: 办公室
     icon: building
-    details: 学生会日常办公与管理相关事务
+    details: 职能描述占位符
     link: ./Office/
 
   - title: 秘书处
     icon: file-lines
-    details: 负责文件管理、会议记录等秘书工作
+    details: 职能描述占位符
     link: ./SecretariatOffice/
 
   - title: 网络部
     icon: network-wired
-    details: 负责网络技术支持与网络安全相关工作
+    details: 职能描述占位符
     link: ./Net/
 
   - title: 宣传部
     icon: bullhorn
-    details: 负责学院活动宣传、海报制作等宣传工作
+    details: 职能描述占位符
     link: ./Publicity/
 
   - title: 新媒体中心
     icon: mobile-screen
-    details: 负责新媒体平台运营与内容创作
+    details: 职能描述占位符
     link: ./NewMedia/
 
   - title: 权益部
     icon: scale-balanced
-    details: 负责维护学生权益与服务工作
+    details: 职能描述占位符
     link: ./Rights/
 
   - title: 文艺部
     icon: palette
-    details: 负责文艺活动策划与组织
+    details: 职能描述占位符
     link: ./Art/
 
   - title: 学习部
     icon: book
-    details: 负责学习活动组织与学术交流
+    details: 职能描述占位符
     link: ./Study/
 
   - title: 体育部
     icon: person-running
-    details: 负责体育活动策划与组织
+    details: 职能描述占位符
     link: ./Sports/
 
   - title: 宿卫部
     icon: broom
-    details: 负责寝室卫生检查与管理
+    details: 职能描述占位符
     link: ./DormSanitation/
 
   - title: 心理健康部
     icon: heart-pulse
-    details: 负责心理健康教育与服务
+    details: 职能描述占位符
     link: ./MentalHealth/
 
   - title: 就业实践部
     icon: people-group
-    details: 负责就业实践活动组织与服务
+    details: 职能描述占位符
     link: ./SocialPractice/
 
 copyright: false
