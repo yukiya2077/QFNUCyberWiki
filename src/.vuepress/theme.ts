@@ -58,10 +58,10 @@ export default hopeTheme({
     mermaid: true,
     flowchart: true,
     // 数学公式
-    math: {
-      type: "mathjax", // 或 'mathjax'
-      output: "svg",
-    },
+    // math: {
+    //   type: "mathjax", // 或 'mathjax'
+    //   output: "svg",
+    // },
     // 启用脚注
     footnote: true,
     // 启用下角标
