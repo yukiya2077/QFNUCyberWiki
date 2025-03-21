@@ -1,5 +1,5 @@
 import { defineUserConfig } from "vuepress";
-
+import { slimsearchPlugin } from '@vuepress/plugin-slimsearch'
 import theme from "./theme.js";
 
 export default defineUserConfig({
@@ -13,9 +13,9 @@ export default defineUserConfig({
   head: [
   ],
 
-  // 添加返回顶部插件
   plugins: [
-
+    slimsearchPlugin({
+    }),
   ],
 
   // 和 PWA 一起启用
