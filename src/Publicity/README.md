@@ -1,6 +1,6 @@
 ---
 title: 宣传部
-icon: fa-solid fa-newspaper
+icon: bullhorn
 ---
 
 # 宣传部

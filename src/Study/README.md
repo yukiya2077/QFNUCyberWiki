@@ -1,6 +1,6 @@
 ---
 title: 学习部
-icon: fas fa-book
+icon: book
 ---
 
 # 学习部

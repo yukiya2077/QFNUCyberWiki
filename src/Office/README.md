@@ -1,9 +1,9 @@
 ---
 title: 办公室
-icon: fa-solid fa-network-wired
+icon: building
 ---
 
-# 网络部
+# 办公室
 
 <div class="catalog-display-container">
   <Catalog base="/Office/" />

@@ -1,10 +1,10 @@
 ---
 title: 就业实践部
-icon: fas fa-briefcase
+icon: people-group
 ---
 
 # 就业实践部
 
 <div class="catalog-display-container">
-  <Catalog base="/SociaPractice/" />
+  <Catalog base="/SocialPractice/" />
 </div>

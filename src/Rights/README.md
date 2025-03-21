@@ -1,6 +1,6 @@
 ---
 title: 权益部
-icon: fas fa-handshake
+icon: scale-balanced
 ---
 
 # 权益部

@@ -1,6 +1,6 @@
 ---
 title: 网络部
-icon: fa-solid fa-network-wired
+icon: network-wired
 ---
 
 # 网络部

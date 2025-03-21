@@ -1,6 +1,6 @@
 ---
 title: 文艺部
-icon: fas fa-music
+icon: palette
 ---
 
 # 文艺部

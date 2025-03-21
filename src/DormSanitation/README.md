@@ -1,6 +1,6 @@
 ---
 title: 宿卫部
-icon: fas fa-bed
+icon: broom
 ---
 
 # 宿卫部

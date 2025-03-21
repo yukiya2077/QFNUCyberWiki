@@ -1,6 +1,6 @@
 ---
 title: 秘书处
-icon: fas fa-file-alt
+icon: file-lines
 ---
 
 # 秘书处

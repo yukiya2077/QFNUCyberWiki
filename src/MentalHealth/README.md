@@ -1,6 +1,6 @@
 ---
 title: 心理健康部
-icon: fas fa-heart
+icon: heart-pulse
 ---
 
 # 心理健康部

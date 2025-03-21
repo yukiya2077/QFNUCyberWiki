@@ -5,62 +5,62 @@ export default navbar([
   {
     text: "网络部",
     link: "/Net/",
-    icon: "fas fa-network-wired",
+    icon: "network-wired",
   },
   {
     text: "学习部",
     link: "/Study/",
-    icon: "fas fa-book",
+    icon: "book",
   },
   {
     text: "宣传部",
     link: "/Publicity/",
-    icon: "fas fa-newspaper",
+    icon: "bullhorn",
   },
   {
     text: "权益部",
     link: "/Rights/",
-    icon: "fas fa-handshake",
+    icon: "scale-balanced",
   },
   {
-    text: "新媒体",
+    text: "新媒体中心",
     link: "/NewMedia/",
-    icon: "fas fa-newspaper",
+    icon: "mobile-screen",
   },
   {
     text: "文艺部",
     link: "/Art/",
-    icon: "fas fa-music",
+    icon: "palette",
   },
   {
     text: "体育部",
     link: "/Sports/",
-    icon: "fas fa-futbol",
+    icon: "person-running",
   },
   {
     text: "宿卫部",
     link: "/DormSanitation/",
-    icon: "fas fa-bed",
+    icon: "broom",
   },
   {
     text: "心理健康部",
     link: "/MentalHealth/",
-    icon: "fas fa-heart",
+    icon: "heart-pulse",
   },
   {
     text: "办公室",
     link: "/Office/",
-    icon: "fas fa-file-alt",
+    icon: "building",
   },
   {
     text: "就业实践部",
     link: "/SocialPractice/",
-    icon: "fas fa-briefcase",
+    icon: "people-group",
   },
   {
     text: "秘书处",
     link: "/SecretariatOffice/",
-    icon: "fas fa-file-alt",
+    icon: "file-lines",
   },
   
 ]);
