@@ -62,5 +62,9 @@ export default navbar([
     link: "/SecretariatOffice/",
     icon: "file-lines",
   },
-  
+  {
+    text: "组织部",
+    link: "/Organization/",
+    icon: "people-group",
+  },
 ]);
