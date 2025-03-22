@@ -17,7 +17,7 @@ jobs:
           node-version: 16
 
       - name: 安装依赖
-        run: npm install @actions/github @actions/core gray-matter fs-extra
+        run: npm install fs-extra gray-matter
 
       - name: 处理Issue并创建PR
         uses: actions/github-script@v6
@@ -27,7 +27,16 @@ jobs:
             const fs = require('fs-extra');
             const path = require('path');
             const matter = require('gray-matter');
-            const { context } = require('@actions/github');
+            const { execSync } = require('child_process');
+            
+            // 确保不再导入重复的变量
+            // context和github已经由actions/github-script预定义
+            
+            // 辅助函数：执行shell命令
+            async function exec(command) {
+              console.log(`执行命令: ${command}`);
+              return execSync(command, { encoding: 'utf8' });
+            }
             
             async function run() {
               try {
@@ -37,8 +46,13 @@ jobs:
                   return;
                 }
                 
+                // 输出调试信息
+                console.log('处理Issue:', issue.number);
+                console.log('Issue标签:', issue.labels.map(l => l.name).join(', '));
+                
                 // 解析Issue内容
                 const body = issue.body;
+                console.log('Issue正文前100个字符:', body.substring(0, 100));
                 
                 // 提取部门名称
                 const departmentMatch = body.match(/### 部门名称\s*\n\s*(.*?)(?:\n|$)/);
@@ -58,9 +72,7 @@ jobs:
                 const filenameMatch = body.match(/### 文件名\s*\n\s*(.*?)(?:\n|$)/);
                 let filename = filenameMatch && filenameMatch[1] ? filenameMatch[1].trim() : '';
                 if (!filename) {
-                  // 如果没有提供文件名，则使用标题的拼音或英文
                   filename = contentTitle.replace(/\s+/g, '-').toLowerCase();
-                  // 确保文件名只包含字母、数字、连字符和下划线
                   filename = filename.replace(/[^a-z0-9\-_]/g, '');
                 }
                 filename = `${filename}.md`;
@@ -77,6 +89,8 @@ jobs:
                   .filter(dirent => dirent.isDirectory())
                   .map(dirent => dirent.name);
                 
+                console.log('src目录下的子目录:', directories.join(', '));
+                
                 let targetDir = null;
                 
                 for (const dir of directories) {
@@ -84,6 +98,8 @@ jobs:
                   if (fs.existsSync(readmePath)) {
                     const readmeContent = fs.readFileSync(readmePath, 'utf8');
                     const { data } = matter(readmeContent);
+                    
+                    console.log(`检查目录 ${dir}, README.md frontmatter:`, JSON.stringify(data));
                     
                     if (data.title && data.title === departmentName) {
                       targetDir = dir;
@@ -144,15 +160,9 @@ jobs:
                 });
               } catch (error) {
                 console.error(`处理过程中发生错误: ${error.message}`);
-                throw error;
+                console.error(error.stack);
+                core.setFailed(`处理出错: ${error.message}`);
               }
-            }
-            
-            // 辅助函数：执行shell命令
-            async function exec(command) {
-              const { execSync } = require('child_process');
-              console.log(`执行命令: ${command}`);
-              return execSync(command, { encoding: 'utf8' });
             }
             
             // 运行主函数
