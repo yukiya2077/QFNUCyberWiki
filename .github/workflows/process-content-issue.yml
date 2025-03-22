@@ -7,7 +7,6 @@ on:
 jobs:
   process-issue:
     runs-on: ubuntu-latest
-    if: contains(github.event.issue.labels.*.name, 'content')
     steps:
       - name: 检出代码
         uses: actions/checkout@v3
