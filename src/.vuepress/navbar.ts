@@ -67,4 +67,9 @@ export default navbar([
     link: "/Organization/",
     icon: "people-group",
   },
+  {
+    text: "外联部",
+    link: "/Outreach/",
+    icon: "handshake",
+  },
 ]);

@@ -14,4 +14,5 @@ export default sidebar({
   "/SocialPractice/": "structure",
   "/SecretariatOffice/": "structure",
   "/Organization/": "structure",
+  "/Outreach/": "structure",
 });

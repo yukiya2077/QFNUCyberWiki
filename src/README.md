@@ -84,6 +84,11 @@ features:
     details: 职能描述占位符
     link: ./Organization/
 
+  - title: 外联部
+    icon: handshake
+    details: 职能描述占位符
+    link: ./Outreach/
+
 copyright: false
 footer: 使用 <a href="https://theme-hope.vuejs.press/zh/" target="_blank">VuePress Theme Hope</a> 主题 | MIT 协议, 版权所有 © 2025-至今 QFNUCyberWiki
 ---
