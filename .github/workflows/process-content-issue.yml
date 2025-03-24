@@ -141,7 +141,7 @@ jobs:
                   # 检测表格结束
                   if line.startswith("|") and i > 10:  # 避免误判开头的表格
                       if all(c in "|" for c in line.strip()):
-                          end_index = i
+                          end_index = i - 1
                           break
               
               # 提取内容
