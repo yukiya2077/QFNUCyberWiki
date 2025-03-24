@@ -2,7 +2,7 @@ name: Process Department Content
 
 on:
   issues:
-    types: [opened]
+    types: [opened, edited]
 
 jobs:
   generate-content:
