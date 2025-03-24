@@ -74,7 +74,11 @@ jobs:
               if end == -1:
                   return None
                   
-              return section[start:end].strip()
+              # 移除可能的开头Markdown标记
+              content = section[start:end].strip()
+              if content.startswith("##"):
+                  content = content.replace("##", "", 1).strip()
+              return content
 
           # 主程序
           body = os.environ.get("ISSUE_BODY", "")
@@ -167,6 +171,7 @@ jobs:
           TITLE: ${{ steps.extract-fields.outputs.TITLE }}
           CONTENT: ${{ steps.extract-fields.outputs.CONTENT }}
           TARGET_DIR: ${{ steps.find-department.outputs.target_dir }}
+          ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
         run: |
           # 清理文件名并创建路径
           CLEAN_FILENAME=$(echo "$FILENAME" | tr ' ' '-' | tr -cd '[:alnum:]-_')
@@ -174,13 +179,17 @@ jobs:
           echo "file_path=$FILE_PATH" >> $GITHUB_OUTPUT
           echo "clean_filename=$CLEAN_FILENAME" >> $GITHUB_OUTPUT
 
-          # 写入内容
+          # 写入内容 - 使用YAML前置内容格式
           ARTICLE_TITLE="${TITLE:-来自 $DEPARTMENT 的投稿}"
-          echo "# $ARTICLE_TITLE" > $FILE_PATH
-          echo -e "\n---\n" >> $FILE_PATH
+          echo "---" > $FILE_PATH
+          echo "title: $ARTICLE_TITLE" >> $FILE_PATH
+          echo "---" >> $FILE_PATH
+          echo "" >> $FILE_PATH
           echo "$CONTENT" >> $FILE_PATH
-          echo -e "\n---\n" >> $FILE_PATH
-          echo "> 投稿人: @${{ github.event.issue.user.login }}" >> $FILE_PATH
+          echo "" >> $FILE_PATH
+          echo "---" >> $FILE_PATH
+          echo "" >> $FILE_PATH
+          echo "> 投稿人: [@$ISSUE_AUTHOR](https://github.com/$ISSUE_AUTHOR)" >> $FILE_PATH
 
       - name: 创建分支并提交更改
         id: create-branch
