@@ -214,7 +214,13 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const title = `内容投稿: ${process.env.DEPARTMENT} - ${process.env.TITLE || process.env.FILENAME}`;
-            const body = `由 Issue #${context.issue.number} 自动生成\n部门目录: \`src/${process.env.TARGET_DIR}\``;
+            // 添加关闭Issue的关键词
+            const body = `由 Issue #${context.issue.number} 自动生成
+            部门目录: \`src/${process.env.TARGET_DIR}\`
+            
+            ---
+            
+            closes #${context.issue.number}`;
 
             try {
               const result = await github.rest.pulls.create({
@@ -227,6 +233,15 @@ jobs:
               });
               
               console.log(`PR created: ${result.data.html_url}`);
+              
+              // 设置PR合并后自动删除分支
+              await github.rest.pulls.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: result.data.number,
+                maintainer_can_modify: true
+              });
+              
               return { 
                 pr_number: result.data.number,
                 pr_url: result.data.html_url
@@ -249,7 +264,7 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `✅ 文件已成功生成！\n\nPull Request 已创建: [#${process.env.PR_NUMBER}](${process.env.PR_URL})\n\n文件路径: \`${process.env.FILE_PATH}\``
+              body: `✅ 文件已成功生成！\n\nPull Request 已创建: [#${process.env.PR_NUMBER}](${process.env.PR_URL})\n\n文件路径: \`${process.env.FILE_PATH}\`\n\n当PR被合并时，此Issue将自动关闭，分支将自动删除。`
             })
 
       - name: PR创建失败处理
@@ -275,7 +290,9 @@ jobs:
 
               1. 点击此链接创建PR: ${process.env.REPO_URL}/compare/main...${process.env.BRANCH_NAME}?expand=1
               2. 设置标题为: "内容投稿: ${{ steps.extract-fields.outputs.DEPARTMENT }} - ${{ steps.extract-fields.outputs.TITLE || steps.extract-fields.outputs.FILENAME }}"
-              3. 审核文件 \`${process.env.FILE_PATH}\` 并提交PR
+              3. 在PR描述中添加 "closes #${context.issue.number}" 以便合并时自动关闭Issue
+              4. 审核文件 \`${process.env.FILE_PATH}\` 并提交PR
+              5. 勾选"自动删除head分支"选项
 
               **提示**: 如需解决此问题，可以在仓库设置中启用"Allow GitHub Actions to create and approve pull requests"选项。`
             })
