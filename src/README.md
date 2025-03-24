@@ -76,7 +76,7 @@ features:
 
   - title: 就业实践部
     icon: people-group
-    details: 职能描述占位符
+    details: 主要开展与学生就业创业有关的志愿活动，对接社区开展大学生进社区，组织寒暑假社会实践以及青鸟计划。
     link: ./SocialPractice/
 
   - title: 组织部
