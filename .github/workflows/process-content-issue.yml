@@ -30,7 +30,7 @@ jobs:
           ISSUE_BODY: ${{ github.event.issue.body }}
         run: |
           cat > extract.py << 'EOF'
-          import os, sys
+          import os, sys, re
 
           def extract_section(body, section_name):
               """提取指定部分的内容"""
@@ -58,31 +58,26 @@ jobs:
               section = extract_section(body, "主要内容")
               if not section:
                   return None
-                  
-              # 查找代码块
-              start = section.find("```")
-              if start == -1:
+              
+              print("提取到的主要内容区段长度:", len(section))
+              
+              # 使用正则表达式提取代码块内容，适用于多行内容
+              code_block_pattern = r'```(?:markdown)?\n([\s\S]*?)```'
+              matches = re.findall(code_block_pattern, section)
+              
+              if not matches:
+                  print("警告: 未找到Markdown代码块")
                   return None
-                  
-              # 跳过```行
-              start = section.find("\n", start) + 1
-              if start == 0:  # 没有找到换行符
-                  return None
-                  
-              # 找到结束的```
-              end = section.find("```", start)
-              if end == -1:
-                  return None
-                  
-              # 移除可能的开头Markdown标记
-              content = section[start:end].strip()
-              if content.startswith("##"):
-                  content = content.replace("##", "", 1).strip()
-              return content
+              
+              # 提取最大的代码块（如果有多个）
+              content = max(matches, key=len)
+              print(f"提取的代码块内容长度: {len(content)}")
+              
+              return content.strip()
 
           # 主程序
           body = os.environ.get("ISSUE_BODY", "")
-          print("Issue内容:", body[:100] + "..." if len(body) > 100 else body)
+          print("Issue内容长度:", len(body))
 
           # 提取各个部分
           department = extract_section(body, "部门名称")
@@ -95,6 +90,10 @@ jobs:
           print(f"标题: {title}")
           print(f"文件名: {filename}")
           print(f"内容长度: {len(content) if content else 0}")
+          
+          # 如果内容超过500字符，仅输出前500字符用于检查
+          if content and len(content) > 500:
+              print(f"内容前500字符: {content[:500]}...")
 
           # 验证必要字段
           missing = []
