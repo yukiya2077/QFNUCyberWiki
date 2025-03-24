@@ -26,22 +26,22 @@ features:
 
   - title: 秘书处
     icon: file-lines
-    details: 职能描述占位符
+    details: 秘书处是团委学生会的核心部门，负责协助主席团处理日常事务、沟通上下信息、起草管理文件文案，并在学院活动中发挥枢纽作用和中坚力量。
     link: ./SecretariatOffice/
 
   - title: 网络部
     icon: network-wired
-    details: 职能描述占位符
+    details: 网络部是团委学生会的技术支持部门，负责学校学生教职工网络基础设施的维护、网络安全防护、网络资源管理以及网络技术支持。
     link: ./Net/
 
   - title: 宣传部
     icon: bullhorn
-    details: 职能描述占位符
+    details: 通过捕捉活动精彩瞬间、拍摄照片、撰写新闻稿并发布于学院官网等方式，宣传学院各类活动，彰显学院精神面貌与学风建设成果，激发学生参与热情，推动学院发展。
     link: ./Publicity/
 
   - title: 新媒体中心
     icon: mobile-screen
-    details: 职能描述占位符
+    details: 主要负责学院公众号、抖音的运营，以及大型活动的直播。
     link: ./NewMedia/
 
   - title: 权益部
@@ -51,12 +51,12 @@ features:
 
   - title: 文艺部
     icon: palette
-    details: 职能描述占位符
+    details: 主要负责组织策划各大文艺活动，通过这些活动搭建起师生交流的桥梁，促进学院文化的繁荣和学生综合素质的全面发展。
     link: ./Art/
 
   - title: 学习部
     icon: book
-    details: 职能描述占位符
+    details: 学习部负责协助学院开展学风建设、组织相关活动，关注青年大学习工作并做好督促、核验与统计，同时加强与班委沟通，及时解决同学们学习方面的问题。
     link: ./Study/
 
   - title: 体育部
@@ -66,12 +66,12 @@ features:
 
   - title: 宿卫部
     icon: broom
-    details: 职能描述占位符
+    details: 致力于营造文明安全宿舍环境，通过日常检查与文化建设，为同学们打造温馨港湾。
     link: ./DormSanitation/
 
   - title: 心理健康部
     icon: heart-pulse
-    details: 职能描述占位符
+    details: 致力于提升学生的心理健康水平，组织心理健康教育活动，营造积极健康的校园心理环境。
     link: ./MentalHealth/
 
   - title: 就业实践部
@@ -88,6 +88,11 @@ features:
     icon: handshake
     details: 职能描述占位符
     link: ./Outreach/
+
+  - title: 社团管理部
+    icon: people-group
+    details: 社团管理部是连接学院与校社管部的桥梁，负责管理院内社团、监督活动实施，并通过策划丰富活动促进学生全面发展。
+    link: ./ClubManagement/
 
 copyright: false
 footer: 使用 <a href="https://theme-hope.vuejs.press/zh/" target="_blank">VuePress Theme Hope</a> 主题 | MIT 协议, 版权所有 © 2025-至今 QFNUCyberWiki
