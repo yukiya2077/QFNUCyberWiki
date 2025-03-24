@@ -44,7 +44,7 @@ jobs:
               'department': r'### 部门名称\s*\n+(.*?)(?=\n###|$)',
               'title': r'### 标题\s*\n+(.*?)(?=\n###|$)',  # 新增标题字段
               'filename': r'### 文件名\s*\n+(.*?)(?=\n###|$)',
-              'content': r'### 主要内容\s*\n+```(?:markdown)?\n([\s\S]*?)\n```(?=\n###|$)',
+              'content': r'### 主要内容\s*\n+```.*?\n([\s\S]*?)\n```',  # 简化markdown匹配
           }
           
           extracted = {}
@@ -59,6 +59,15 @@ jobs:
                   # 只有必需字段缺失时才退出
                   if k in ['department', 'filename', 'content']:
                       print(f"错误：缺少必要字段: {k}")
+                      # 对于content字段，尝试简化模式再匹配一次
+                      if k == 'content':
+                          # 尝试更简化的匹配模式
+                          simple_pattern = r'### 主要内容\s*\n+```([\s\S]*?)```'
+                          match = re.search(simple_pattern, body, re.DOTALL)
+                          if match:
+                              extracted[k] = match.group(1).strip()
+                              print(f"成功使用简化模式提取 {k}: {extracted[k][:50]}...")
+                              continue
                       sys.exit(1)
           
           # 验证必要字段
