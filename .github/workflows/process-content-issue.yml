@@ -13,16 +13,31 @@ jobs:
   generate-content:
     runs-on: ubuntu-latest
     steps:
+      - name: 立即回复“已收到，正在处理...”
+        id: initial-comment
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const response = await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: "✅ 已收到您的投稿请求，正在处理...\n\n请稍等，我们会尽快完成解析并生成内容。"
+            });
+
+            core.setOutput("comment_id", response.data.id);
+
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # 需要完整历史记录来创建新分支
+          fetch-depth: 0
 
       - name: 安装依赖
         run: |
           sudo wget -O /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v4.35.1/yq_linux_amd64
           sudo chmod +x /usr/local/bin/yq
-          pip install pyyaml          # 安装 Python YAML 库
+          pip install pyyaml
 
       - name: 提取模板字段
         id: extract-fields
@@ -30,170 +45,65 @@ jobs:
           ISSUE_BODY: ${{ github.event.issue.body }}
         run: |
           cat > extract.py << 'EOF'
-          import os, sys, re, html
+          import os, sys, re
 
           def unescape_markdown(text):
-              """解除Markdown转义"""
               if not text:
                   return text
-              # 解除常见的Markdown转义字符
-              text = text.replace('\\*', '*')
-              text = text.replace('\\#', '#')
-              text = text.replace('\\`', '`')
-              text = text.replace('\\\\', '\\')
-              return text
+              return text.replace('\\*', '*').replace('\\#', '#').replace('\\`', '`').replace('\\\\', '\\')
 
           def extract_section(body, section_name):
-              """提取指定部分的内容"""
-              if not body:
+              marker = f"### {section_name}"
+              start = body.find(marker)
+              if start == -1:
                   return None
-                  
-              marker = "### " + section_name
-              # 兼容表格中的格式
-              alt_marker = "**" + section_name + "**"
-              
-              # 尝试找标准格式
-              if marker in body:
-                  print(f"找到标准标记 '{marker}'")
-                  # 找到部分的开始
-                  start = body.find(marker) + len(marker)
-                  
-                  # 找到下一个部分的开始（如果有）
-                  next_section = body.find("###", start)
-                  if next_section != -1:
-                      section_content = body[start:next_section]
-                  else:
-                      section_content = body[start:]
-                  
-                  return section_content.strip()
-              
-              # 尝试从表格提取（寻找"部门名称 科创部"这样的模式）
-              elif section_name + " " in body:
-                  print(f"尝试从表格提取 '{section_name}'")
-                  pattern = r'(?:' + re.escape(section_name) + r'|' + re.escape(alt_marker) + r')\s+([^\n|]+)'
-                  match = re.search(pattern, body)
-                  if match:
-                      print(f"从表格模式提取到 '{section_name}': {match.group(1)}")
-                      return match.group(1).strip()
-              
-              print(f"警告: 未找到标记 '{marker}' 或表格中的 '{section_name}'")
-              return None
-              
+              start += len(marker)
+              next_section = body.find("###", start)
+              return body[start:next_section].strip() if next_section != -1 else body[start:].strip()
+
           def extract_content(body):
-              """提取内容 - 从第一个```markdown开始，到最后一个```结束"""
-              print("使用新的内容提取方法：从第一个```markdown到最后一个```")
-              
-              # 定位第一个 ```markdown 标记的位置
-              markdown_start = body.find("```markdown")
-              if markdown_start == -1:
-                  print("警告: 未找到```markdown标记")
+              start = body.find("```markdown")
+              if start == -1:
                   return None
-              
-              # 从第一个标记后跳过到下一行开始
-              content_start = body.find("\n", markdown_start)
-              if content_start == -1:
-                  print("警告: Markdown代码块格式异常（无法定位换行符）")
-                  return None
-              content_start += 1  # 跳过换行符
-              
-              # 定位最后一个 ``` 标记的位置
-              markdown_end = body.rfind("```")
-              if markdown_end == -1 or markdown_end <= content_start:
-                  print("警告: 未找到结束的Markdown代码块标记")
-                  return None
-              
-              # 提取两者之间的内容并去除首尾空白字符
-              content = body[content_start:markdown_end].strip()
-              
-              # 处理转义字符
-              content = unescape_markdown(content)
-              content = content.replace('\\n', '\n')
-              
-              print("成功提取内容，内容前100字符:", content[:100].replace("\n", "\\n") + ("..." if len(content) > 100 else ""))
-              return content
+              start = body.find("\n", start) + 1
+              end = body.rfind("```")
+              return unescape_markdown(body[start:end].strip()) if end > start else None
 
-          # 主程序
           body = os.environ.get("ISSUE_BODY", "")
-          print("Issue内容长度:", len(body))
-          print("Issue内容前300字符:", body[:300].replace("\n", "\\n") + ("..." if len(body) > 300 else ""))
+          department = extract_section(body, "部门名称")
+          title = extract_section(body, "标题")
+          filename = extract_section(body, "文件名")
+          content = extract_content(body)
 
-          try:
-              # 尝试检测表格格式
-              if "|" in body and "-|-" in body:
-                  print("检测到可能的表格格式")
-              
-              # 提取各个部分
-              department = extract_section(body, "部门名称")
-              title = extract_section(body, "标题")
-              filename = extract_section(body, "文件名")
-              content = extract_content(body)
-              
-              print("提取结果:")
-              print(f"部门名称: {department}")
-              print(f"标题: {title}")
-              print(f"文件名: {filename}")
-              print(f"内容长度: {len(content) if content else 0}")
-              
-              # 验证必要字段
-              missing = []
-              if not department:
-                  missing.append("部门名称")
-              if not filename:
-                  missing.append("文件名")
-              if not content:
-                  missing.append("主要内容")
-                  
-              if missing:
-                  print(f"错误: 缺少必要字段: {', '.join(missing)}")
-                  sys.exit(1)
-              
-              # 输出到环境变量
-              with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-                  f.write(f"DEPARTMENT={department}\n")
-                  f.write(f"FILENAME={filename}\n")
-                  if title:
-                      f.write(f"TITLE={title}\n")
-                  f.write(f"CONTENT<<EOF_CONTENT\n{content}\nEOF_CONTENT\n")
-          except Exception as e:
-              print(f"提取过程中发生错误: {str(e)}")
-              import traceback
-              traceback.print_exc()
+          missing = [f for f, v in [("部门名称", department), ("文件名", filename), ("主要内容", content)] if not v]
+          if missing:
+              print(f"错误: 缺少字段: {', '.join(missing)}")
               sys.exit(1)
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"DEPARTMENT={department}\n")
+              f.write(f"FILENAME={filename}\n")
+              if title:
+                  f.write(f"TITLE={title}\n")
+              f.write(f"CONTENT<<EOF_CONTENT\n{content}\nEOF_CONTENT\n")
           EOF
 
-          # 执行提取脚本
           python extract.py
-
-      - name: 检查Issue解析失败
-        if: ${{ failure() && steps.extract-fields.outcome == 'failure' }}
-        uses: actions/github-script@v6
-        with:
-          script: |
-            await github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '❌ 错误：无法从Issue内容中提取必要信息。请确保包含以下必要字段：\n\n```\n### 部门名称\n<部门名称>\n\n### 文件名\n<文件名>\n\n### 主要内容\n```markdown\n<内容>\n```\n```'
-            })
 
       - name: 匹配部门目录
         id: find-department
         env:
           DEPARTMENT: ${{ steps.extract-fields.outputs.DEPARTMENT }}
         run: |
-          # 遍历 src 子目录查找匹配的 title
           BASE_DIR="src"
           TARGET_DIR=""
 
           for dir in $(find $BASE_DIR -maxdepth 1 -type d); do
             readme="$dir/README.md"
             if [ -f "$readme" ]; then
-              frontmatter=$(sed -n '/^---$/,/^---$/p' $readme | head -n -1 | tail -n +2)
-              # 使用Python处理YAML前置内容，避免yq命令语法问题
-              title=$(python -c "import yaml; print(yaml.safe_load('''$frontmatter''').get('title', ''))")
-              
+              title=$(sed -n '/^title:/ s/title: //p' $readme)
               if [ "$title" = "$DEPARTMENT" ]; then
-                TARGET_DIR="${dir#*/}"  # 去除前面的 src/
+                TARGET_DIR="${dir#*/}"
                 break
               fi
             fi
@@ -216,166 +126,69 @@ jobs:
           TARGET_DIR: ${{ steps.find-department.outputs.target_dir }}
           ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
         run: |
-          # 清理文件名并创建路径
           CLEAN_FILENAME=$(echo "$FILENAME" | tr ' ' '-' | tr -cd '[:alnum:]-_')
           FILE_PATH="src/$TARGET_DIR/${CLEAN_FILENAME}.md"
           echo "file_path=$FILE_PATH" >> $GITHUB_OUTPUT
-          echo "clean_filename=$CLEAN_FILENAME" >> $GITHUB_OUTPUT
 
-          # 写入内容 - 使用YAML前置内容格式
-          ARTICLE_TITLE="${TITLE:-来自 $DEPARTMENT 的投稿}"
           echo "---" > $FILE_PATH
-          echo "title: $ARTICLE_TITLE" >> $FILE_PATH
+          echo "title: ${TITLE:-来自 $DEPARTMENT 的投稿}" >> $FILE_PATH
           echo "---" >> $FILE_PATH
-          echo "" >> $FILE_PATH
           echo "$CONTENT" >> $FILE_PATH
-          echo "" >> $FILE_PATH
           echo "---" >> $FILE_PATH
-          echo "" >> $FILE_PATH
           echo "> 投稿人: [@$ISSUE_AUTHOR](https://github.com/$ISSUE_AUTHOR)" >> $FILE_PATH
 
       - name: 创建分支并提交更改
         id: create-branch
         env:
-          FILENAME: ${{ steps.extract-fields.outputs.FILENAME }}
           FILE_PATH: ${{ steps.generate-file.outputs.file_path }}
         run: |
-          # 使用时间戳创建唯一分支名
-          TIMESTAMP=$(date +%Y%m%d%H%M%S)
-          BRANCH_NAME="content-update/$FILENAME-$TIMESTAMP"
-          echo "使用分支名: $BRANCH_NAME"
-          
-          # 检查分支是否已存在
-          git fetch origin
-          if git show-ref --verify --quiet "refs/remotes/origin/$BRANCH_NAME"; then
-            echo "分支 $BRANCH_NAME 已存在，使用新名称"
-            BRANCH_NAME="content-update/$FILENAME-$TIMESTAMP-$RANDOM"
-            echo "新分支名: $BRANCH_NAME"
-          fi
-          
+          BRANCH_NAME="content-update-$(date +%Y%m%d%H%M%S)"
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b $BRANCH_NAME
-
-          # 只添加生成的文件，不添加脚本文件
           git add "$FILE_PATH"
-          git commit -m "添加内容: $FILENAME (部门: ${{ steps.extract-fields.outputs.DEPARTMENT }})"
-          
-          # 使用--force确保推送成功
+          git commit -m "添加内容: ${{ steps.extract-fields.outputs.FILENAME }} (部门: ${{ steps.extract-fields.outputs.DEPARTMENT }})"
           git push --force origin $BRANCH_NAME
-          
-          # 输出分支名
           echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
-          echo "repo_url=https://github.com/${{ github.repository }}" >> $GITHUB_OUTPUT
 
       - name: 使用GitHub API创建PR
         id: create-pr-api
         continue-on-error: true
-        uses: actions/github-script@v6
-        env:
-          BRANCH_NAME: ${{ steps.create-branch.outputs.branch_name }}
-          DEPARTMENT: ${{ steps.extract-fields.outputs.DEPARTMENT }}
-          FILENAME: ${{ steps.extract-fields.outputs.FILENAME }}
-          TITLE: ${{ steps.extract-fields.outputs.TITLE }}
-          TARGET_DIR: ${{ steps.find-department.outputs.target_dir }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const title = `内容投稿: ${process.env.DEPARTMENT} - ${process.env.TITLE || process.env.FILENAME}`;
-            // 添加关闭Issue的关键词
-            const body = `由 Issue #${context.issue.number} 自动生成
-            部门目录: \`src/${process.env.TARGET_DIR}\`
-            
-            ---
-            
-            closes #${context.issue.number}`;
-
-            try {
-              const result = await github.rest.pulls.create({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                title: title,
-                body: body,
-                head: process.env.BRANCH_NAME,
-                base: 'main'
-              });
-              
-              console.log(`PR created: ${result.data.html_url}`);
-              
-              // 设置PR合并后自动删除分支
-              await github.rest.pulls.update({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: result.data.number,
-                maintainer_can_modify: true
-              });
-              
-              return { 
-                pr_number: result.data.number,
-                pr_url: result.data.html_url
-              };
-            } catch (error) {
-              console.log(`Error creating PR: ${error.message}`);
-              return { error: error.message };
-            }
-
-      - name: 通知PR创建成功
-        if: ${{ success() && steps.create-pr-api.outcome == 'success' && contains(steps.create-pr-api.outputs.result, 'pr_number') }}
-        uses: actions/github-script@v6
-        with:
-          script: |
-            // 安全地解析JSON
-            let result;
-            try {
-              result = JSON.parse('${{ steps.create-pr-api.outputs.result }}');
-            } catch (error) {
-              console.log('Failed to parse PR result: ' + error.message);
-              return;
-            }
-            
-            if (!result || !result.pr_number || !result.pr_url) {
-              console.log('Invalid PR result format');
-              return;
-            }
-            
-            await github.rest.issues.createComment({
-              issue_number: context.issue.number,
+            const title = `内容投稿: ${{ steps.extract-fields.outputs.DEPARTMENT }} - ${{ steps.extract-fields.outputs.TITLE || steps.extract-fields.outputs.FILENAME }}`;
+            const result = await github.rest.pulls.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `✅ 文件已成功生成！\n\nPull Request 已创建: [#${result.pr_number}](${result.pr_url})\n\n文件路径: \`${{ steps.generate-file.outputs.file_path }}\`\n\n当PR被合并时，此Issue将自动关闭，分支将自动删除。`
+              title: title,
+              body: `closes #${context.issue.number}`,
+              head: process.env.BRANCH_NAME,
+              base: 'main'
             });
 
-      - name: PR创建状态通知
-        if: ${{ always() && (steps.create-pr-api.outcome == 'failure' || !contains(steps.create-pr-api.outputs.result, 'pr_number')) }}
-        uses: actions/github-script@v6
-        with:
-          script: |
-            // 尝试安全地获取错误信息
-            let errorMsg = '未知错误';
-            try {
-              const result = JSON.parse('${{ steps.create-pr-api.outputs.result || '{"error":"未知错误"}' }}');
-              if (result && result.error) {
-                errorMsg = result.error;
-              }
-            } catch (error) {
-              console.log('Failed to parse error result: ' + error.message);
-            }
-            
-            await github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `✅ 文件已成功生成并提交到分支 \`${{ steps.create-branch.outputs.branch_name }}\`！\n\n若无法自动创建Pull Request。信息：${errorMsg}\n\n请手动完成以下步骤：\n\n1. 点击此链接创建PR: ${{ steps.create-branch.outputs.repo_url }}/compare/main...${{ steps.create-branch.outputs.branch_name }}?expand=1\n2. 设置标题为: "内容投稿: ${{ steps.extract-fields.outputs.DEPARTMENT }} - ${{ steps.extract-fields.outputs.TITLE || steps.extract-fields.outputs.FILENAME }}"\n3. 在PR描述中添加 "closes #${context.issue.number}" 以便合并时自动关闭Issue\n4. 审核文件 \`${{ steps.generate-file.outputs.file_path }}\` 并提交PR\n5. 勾选"自动删除head分支"选项\n\n**提示**: 如需解决此问题，可以在仓库设置中启用"Allow GitHub Actions to create and approve pull requests"选项。`
-            });
+            core.setOutput("pr_url", result.data.html_url);
 
-      - name: 检查部门是否存在
-        if: ${{ failure() && steps.find-department.outcome == 'failure' }}
+      - name: 处理完成后修改评论内容
+        if: always()
         uses: actions/github-script@v6
+        env:
+          COMMENT_ID: ${{ steps.initial-comment.outputs.comment_id }}
+          FILE_PATH: ${{ steps.generate-file.outputs.file_path }}
+          BRANCH_NAME: ${{ steps.create-branch.outputs.branch_name }}
+          PR_URL: ${{ steps.create-pr-api.outputs.pr_url }}
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            await github.rest.issues.createComment({
-              issue_number: context.issue.number,
+            const commentId = process.env.COMMENT_ID;
+            const message = '${{ success() }}' === 'true' ?
+              `✅ **处理完成！**\n- 生成文件路径: \`${process.env.FILE_PATH}\`\n- [Pull Request 已创建](${process.env.PR_URL})\n- 相关分支: \`${process.env.BRANCH_NAME}\``
+              :
+              `⚠ **处理失败！**\n- 请检查 Issue 格式，确保所有必要字段正确填写。`;
+
+            await github.rest.issues.updateComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '❌ 错误：未找到与部门名称匹配的目录，请检查部门名称是否正确'
-            })
+              comment_id: commentId,
+              body: message
+            });
