@@ -141,9 +141,10 @@ jobs:
                   # 检测表格结束
                   if line.startswith("|") and i > 10:  # 避免误判开头的表格
                       if all(c in "|" for c in line.strip()):
-                          end_index = i - 1
+                          end_index = i
                           break
-              
+              # 减一行，取代码块尾部上方
+              end_index = end_index - 1 
               # 提取内容
               content = "\n".join(content_lines[:end_index])
               
