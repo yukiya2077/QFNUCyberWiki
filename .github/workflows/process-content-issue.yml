@@ -80,81 +80,36 @@ jobs:
               return None
               
           def extract_content(body):
-              """提取内容 - 从第一个```markdown开始，到倒数第二行为止"""
-              print("使用新的内容提取方法：从```markdown开始到倒数第二行")
+              """提取内容 - 从第一个```markdown开始，到最后一个```结束"""
+              print("使用新的内容提取方法：从第一个```markdown到最后一个```")
               
-              # 尝试直接在全部内容中查找```markdown
+              # 定位第一个 ```markdown 标记的位置
               markdown_start = body.find("```markdown")
               if markdown_start == -1:
-                  # 尝试查找转义版本
-                  markdown_start = body.find("\\```markdown")
-                  if markdown_start == -1:
-                      # 如果仍然找不到，尝试只查找```
-                      markdown_start = body.find("```")
-                      if markdown_start == -1:
-                          print("警告: 未找到任何Markdown代码块标记")
-                          
-                          # 尝试寻找转义的标题标记（\#）
-                          if "\\#" in body:
-                              print("尝试提取转义的Markdown内容")
-                              # 查找主要内容部分
-                              if "主要内容" in body:
-                                  content_start = body.find("主要内容") + len("主要内容")
-                                  content = body[content_start:].strip()
-                                  # 处理转义字符
-                                  content = unescape_markdown(content)
-                                  return content
-                          
-                          # 最后的尝试：使用表格提取
-                          section = extract_section(body, "主要内容")
-                          if section:
-                              return section
-                              
-                          return None
-              
-              # 找到Markdown块开始的位置（跳过```markdown行）
-              content_start = body.find("\n", markdown_start) + 1
-              if content_start <= 0:  # 没有找到换行符
-                  print("警告: Markdown代码块格式异常")
+                  print("警告: 未找到```markdown标记")
                   return None
               
-              # 获取剩余全部内容
-              raw_content = body[content_start:]
+              # 从第一个标记后跳过到下一行开始
+              content_start = body.find("\n", markdown_start)
+              if content_start == -1:
+                  print("警告: Markdown代码块格式异常（无法定位换行符）")
+                  return None
+              content_start += 1  # 跳过换行符
               
-              # 按行分割
-              lines = raw_content.split("\n")
+              # 定位最后一个 ``` 标记的位置
+              markdown_end = body.rfind("```")
+              if markdown_end == -1 or markdown_end <= content_start:
+                  print("警告: 未找到结束的Markdown代码块标记")
+                  return None
               
-              # 处理特殊情况：如果只有几行，直接返回
-              if len(lines) <= 3:
-                  content = "\n".join(lines)
-                  return content
-              
-              # 移除最后两行（通常是```和其他结束标记）
-              content_lines = lines[:-2]
-              
-              # 找到内容的结束位置（通常是```或表格结束）
-              end_index = len(content_lines)
-              for i, line in enumerate(content_lines):
-                  if line.strip() == "```" or line.strip() == "\\```":
-                      end_index = i
-                      break
-                  # 检测表格结束
-                  if line.startswith("|") and i > 10:  # 避免误判开头的表格
-                      if all(c in "|" for c in line.strip()):
-                          end_index = i
-                          break
-              # 减一行，取代码块尾部上方
-              end_index = end_index - 1 
-              # 提取内容
-              content = "\n".join(content_lines[:end_index])
+              # 提取两者之间的内容并去除首尾空白字符
+              content = body[content_start:markdown_end].strip()
               
               # 处理转义字符
               content = unescape_markdown(content)
               content = content.replace('\\n', '\n')
               
-              print(f"从Markdown块提取了{len(content_lines[:end_index])}行内容")
-              print("内容前100字符:", content[:100].replace("\n", "\\n") + ("..." if len(content) > 100 else ""))
-              
+              print("成功提取内容，内容前100字符:", content[:100].replace("\n", "\\n") + ("..." if len(content) > 100 else ""))
               return content
 
           # 主程序
