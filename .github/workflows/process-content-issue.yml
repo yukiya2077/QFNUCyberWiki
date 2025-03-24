@@ -172,6 +172,7 @@ jobs:
           CLEAN_FILENAME=$(echo "$FILENAME" | tr ' ' '-' | tr -cd '[:alnum:]-_')
           FILE_PATH="src/$TARGET_DIR/${CLEAN_FILENAME}.md"
           echo "file_path=$FILE_PATH" >> $GITHUB_OUTPUT
+          echo "clean_filename=$CLEAN_FILENAME" >> $GITHUB_OUTPUT
           
           # 写入内容
           ARTICLE_TITLE="${TITLE:-来自 $DEPARTMENT 的投稿}"
@@ -185,44 +186,80 @@ jobs:
         id: create-branch
         env:
           FILENAME: ${{ steps.extract-fields.outputs.FILENAME }}
+          FILE_PATH: ${{ steps.generate-file.outputs.file_path }}
         run: |
           # 创建并切换到新分支
           BRANCH_NAME="content-update/$FILENAME-${{ github.run_id }}"
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b $BRANCH_NAME
-          git add .
+          
+          # 只添加生成的文件，不添加脚本文件
+          git add "$FILE_PATH"
           git commit -m "添加内容: $FILENAME (部门: ${{ steps.extract-fields.outputs.DEPARTMENT }})"
           git push origin $BRANCH_NAME
           echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
           echo "repo_url=https://github.com/${{ github.repository }}" >> $GITHUB_OUTPUT
 
-      - name: 尝试创建Pull Request
-        id: create-pr
-        continue-on-error: true
-        uses: peter-evans/create-pull-request@v5
+      - name: 使用GitHub API创建PR
+        id: create-pr-api
+        uses: actions/github-script@v6
         env:
+          BRANCH_NAME: ${{ steps.create-branch.outputs.branch_name }}
           DEPARTMENT: ${{ steps.extract-fields.outputs.DEPARTMENT }}
           FILENAME: ${{ steps.extract-fields.outputs.FILENAME }}
           TITLE: ${{ steps.extract-fields.outputs.TITLE }}
           TARGET_DIR: ${{ steps.find-department.outputs.target_dir }}
         with:
-          branch: ${{ steps.create-branch.outputs.branch_name }}
-          base: main
-          title: "内容投稿: ${{ steps.extract-fields.outputs.DEPARTMENT }} - ${{ steps.extract-fields.outputs.TITLE || steps.extract-fields.outputs.FILENAME }}"
-          body: |
-            由 Issue #${{ github.event.issue.number }} 自动生成
-            部门目录: `src/${{ steps.find-department.outputs.target_dir }}`
-          commit-message: "添加内容: ${{ steps.extract-fields.outputs.FILENAME }} (部门: ${{ steps.extract-fields.outputs.DEPARTMENT }})"
-          labels: "content-submission"
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const title = `内容投稿: ${process.env.DEPARTMENT} - ${process.env.TITLE || process.env.FILENAME}`;
+            const body = `由 Issue #${context.issue.number} 自动生成\n部门目录: \`src/${process.env.TARGET_DIR}\``;
+            
+            try {
+              const result = await github.rest.pulls.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                head: process.env.BRANCH_NAME,
+                base: 'main'
+              });
+              
+              console.log(`PR created: ${result.data.html_url}`);
+              return { 
+                pr_number: result.data.number,
+                pr_url: result.data.html_url
+              };
+            } catch (error) {
+              console.log(`Error creating PR: ${error.message}`);
+              return { error: error.message };
+            }
+
+      - name: 通知PR创建成功
+        if: steps.create-pr-api.outputs.pr_number
+        uses: actions/github-script@v6
+        env:
+          PR_URL: ${{ fromJSON(steps.create-pr-api.outputs.result).pr_url }}
+          PR_NUMBER: ${{ fromJSON(steps.create-pr-api.outputs.result).pr_number }}
+          FILE_PATH: ${{ steps.generate-file.outputs.file_path }}
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `✅ 文件已成功生成！\n\nPull Request 已创建: [#${process.env.PR_NUMBER}](${process.env.PR_URL})\n\n文件路径: \`${process.env.FILE_PATH}\``
+            })
 
       - name: PR创建失败处理
-        if: steps.create-pr.outcome == 'failure'
+        if: ${{ !steps.create-pr-api.outputs.pr_number }}
         uses: actions/github-script@v6
         env:
           BRANCH_NAME: ${{ steps.create-branch.outputs.branch_name }}
           REPO_URL: ${{ steps.create-branch.outputs.repo_url }}
           FILE_PATH: ${{ steps.generate-file.outputs.file_path }}
+          ERROR: ${{ fromJSON(steps.create-pr-api.outputs.result).error }}
         with:
           script: |
             await github.rest.issues.createComment({
@@ -231,7 +268,9 @@ jobs:
               repo: context.repo.repo,
               body: `✅ 文件已成功生成并提交到分支 \`${process.env.BRANCH_NAME}\`！
 
-              但由于GitHub Actions权限限制，无法自动创建Pull Request。请手动完成以下步骤：
+              但无法自动创建Pull Request。错误信息：${process.env.ERROR || '未知错误'}
+
+              请手动完成以下步骤：
 
               1. 点击此链接创建PR: ${process.env.REPO_URL}/compare/main...${process.env.BRANCH_NAME}?expand=1
               2. 设置标题为: "内容投稿: ${{ steps.extract-fields.outputs.DEPARTMENT }} - ${{ steps.extract-fields.outputs.TITLE || steps.extract-fields.outputs.FILENAME }}"
