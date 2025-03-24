@@ -9,6 +9,7 @@ export default sidebar({
   "/Art/": "structure",
   "/Sports/": "structure",
   "/DormSanitation/": "structure",
+  "/DisciplineInspection/": "structure",
   "/MentalHealth/": "structure",
   "/Office/": "structure",
   "/SocialPractice/": "structure",

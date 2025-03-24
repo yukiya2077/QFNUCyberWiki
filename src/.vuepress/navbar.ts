@@ -72,4 +72,9 @@ export default navbar([
     link: "/Outreach/",
     icon: "handshake",
   },
+  {
+    text: "纪检部",
+    link: "/DisciplineInspection/",
+    icon: "scale-balanced",
+  },
 ]);
