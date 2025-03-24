@@ -26,66 +26,90 @@ jobs:
         env:
           ISSUE_BODY: ${{ github.event.issue.body }}
         run: |
-          # 使用 Python 解析字段
+          # 使用更简单的Python解析方法
           python - <<EOF
-          import os, re, yaml, sys
-          from pathlib import Path
+          import os, sys
 
-          body = os.environ['ISSUE_BODY']
-          if body is None or body.strip() == "":
-              print("错误：Issue内容为空")
-              sys.exit(1)
+          def extract_section(body, section_name):
+              """提取指定部分的内容"""
+              if not body:
+                  return None
+                  
+              marker = f"### {section_name}"
+              if marker not in body:
+                  return None
+                  
+              # 找到部分的开始
+              start = body.find(marker) + len(marker)
               
-          # 打印Issue内容用于调试
-          print("Issue内容:", body)
-          
-          # 更新正则表达式，使其更加灵活，匹配实际Issue格式
-          patterns = {
-              'department': r'### 部门名称\s*\n+(.*?)(?=\n###|$)',
-              'title': r'### 标题\s*\n+(.*?)(?=\n###|$)',  # 新增标题字段
-              'filename': r'### 文件名\s*\n+(.*?)(?=\n###|$)',
-              'content': r'### 主要内容\s*\n+```.*?\n([\s\S]*?)\n```',  # 简化markdown匹配
-          }
-          
-          extracted = {}
-          # 尝试提取每个字段，但只有department、filename和content是必需的
-          for k, v in patterns.items():
-              match = re.search(v, body, re.DOTALL)
-              if match:
-                  extracted[k] = match.group(1).strip()
-                  print(f"成功提取 {k}: {extracted[k][:50]}...")
+              # 找到下一个部分的开始（如果有）
+              next_section = body.find("###", start)
+              if next_section != -1:
+                  section_content = body[start:next_section]
               else:
-                  print(f"警告：未能提取'{k}'字段")
-                  # 只有必需字段缺失时才退出
-                  if k in ['department', 'filename', 'content']:
-                      print(f"错误：缺少必要字段: {k}")
-                      # 对于content字段，尝试简化模式再匹配一次
-                      if k == 'content':
-                          # 尝试更简化的匹配模式
-                          simple_pattern = r'### 主要内容\s*\n+```([\s\S]*?)```'
-                          match = re.search(simple_pattern, body, re.DOTALL)
-                          if match:
-                              extracted[k] = match.group(1).strip()
-                              print(f"成功使用简化模式提取 {k}: {extracted[k][:50]}...")
-                              continue
-                      sys.exit(1)
+                  section_content = body[start:]
+                  
+              return section_content.strip()
+              
+          def extract_content(body):
+              """提取主要内容（代码块）"""
+              section = extract_section(body, "主要内容")
+              if not section:
+                  return None
+                  
+              # 查找代码块
+              start = section.find("```")
+              if start == -1:
+                  return None
+                  
+              # 跳过```行
+              start = section.find("\n", start) + 1
+              if start == 0:  # 没有找到换行符
+                  return None
+                  
+              # 找到结束的```
+              end = section.find("```", start)
+              if end == -1:
+                  return None
+                  
+              return section[start:end].strip()
+
+          # 主程序
+          body = os.environ.get('ISSUE_BODY', '')
+          print("Issue内容:", body[:100] + "..." if len(body) > 100 else body)
+          
+          # 提取各个部分
+          department = extract_section(body, "部门名称")
+          title = extract_section(body, "标题")
+          filename = extract_section(body, "文件名")
+          content = extract_content(body)
+          
+          # 打印提取结果（调试用）
+          print(f"部门名称: {department}")
+          print(f"标题: {title}")
+          print(f"文件名: {filename}")
+          print(f"内容长度: {len(content) if content else 0}")
           
           # 验证必要字段
-          required_fields = ['department', 'filename', 'content']
-          missing_fields = [field for field in required_fields if field not in extracted or not extracted[field]]
-          
-          if missing_fields:
-              print(f"错误：缺少必要字段: {', '.join(missing_fields)}")
+          missing = []
+          if not department:
+              missing.append("部门名称")
+          if not filename:
+              missing.append("文件名")
+          if not content:
+              missing.append("主要内容")
+              
+          if missing:
+              print(f"错误: 缺少必要字段: {', '.join(missing)}")
               sys.exit(1)
           
           # 输出到环境变量
           with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
-              f.write(f"DEPARTMENT={extracted['department']}\n")
-              f.write(f"FILENAME={extracted['filename']}\n")
-              # 如果有标题字段，也输出
-              if 'title' in extracted:
-                  f.write(f"TITLE={extracted['title']}\n")
-              f.write(f"CONTENT<<EOF\n{extracted['content']}\nEOF\n")
+              f.write(f"DEPARTMENT={department}\n")
+              f.write(f"FILENAME={filename}\n")
+              if title:
+                  f.write(f"TITLE={title}\n")
+              f.write(f"CONTENT<<EOF\n{content}\nEOF\n")
           EOF
 
       - name: 检查Issue解析失败
