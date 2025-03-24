@@ -30,7 +30,18 @@ jobs:
           ISSUE_BODY: ${{ github.event.issue.body }}
         run: |
           cat > extract.py << 'EOF'
-          import os, sys, re
+          import os, sys, re, html
+
+          def unescape_markdown(text):
+              """解除Markdown转义"""
+              if not text:
+                  return text
+              # 解除常见的Markdown转义字符
+              text = text.replace('\\*', '*')
+              text = text.replace('\\#', '#')
+              text = text.replace('\\`', '`')
+              text = text.replace('\\\\', '\\')
+              return text
 
           def extract_section(body, section_name):
               """提取指定部分的内容"""
@@ -38,84 +49,160 @@ jobs:
                   return None
                   
               marker = "### " + section_name
-              if marker not in body:
-                  print(f"警告: 未找到标记 '{marker}'")
-                  return None
-                  
-              # 找到部分的开始
-              start = body.find(marker) + len(marker)
+              # 兼容表格中的格式
+              alt_marker = "**" + section_name + "**"
               
-              # 找到下一个部分的开始（如果有）
-              next_section = body.find("###", start)
-              if next_section != -1:
-                  section_content = body[start:next_section]
-              else:
-                  section_content = body[start:]
+              # 尝试找标准格式
+              if marker in body:
+                  print(f"找到标准标记 '{marker}'")
+                  # 找到部分的开始
+                  start = body.find(marker) + len(marker)
                   
-              return section_content.strip()
+                  # 找到下一个部分的开始（如果有）
+                  next_section = body.find("###", start)
+                  if next_section != -1:
+                      section_content = body[start:next_section]
+                  else:
+                      section_content = body[start:]
+                  
+                  return section_content.strip()
+              
+              # 尝试从表格提取（寻找"部门名称 科创部"这样的模式）
+              elif section_name + " " in body:
+                  print(f"尝试从表格提取 '{section_name}'")
+                  pattern = r'(?:' + re.escape(section_name) + r'|' + re.escape(alt_marker) + r')\s+([^\n|]+)'
+                  match = re.search(pattern, body)
+                  if match:
+                      print(f"从表格模式提取到 '{section_name}': {match.group(1)}")
+                      return match.group(1).strip()
+              
+              print(f"警告: 未找到标记 '{marker}' 或表格中的 '{section_name}'")
+              return None
               
           def extract_content(body):
-              """提取主要内容（代码块）- 保留完整Markdown格式"""
-              section = extract_section(body, "主要内容")
-              if not section:
-                  print("警告: 未找到'主要内容'部分")
+              """提取内容 - 从第一个```markdown开始，到倒数第二行为止"""
+              print("使用新的内容提取方法：从```markdown开始到倒数第二行")
+              
+              # 尝试直接在全部内容中查找```markdown
+              markdown_start = body.find("```markdown")
+              if markdown_start == -1:
+                  # 尝试查找转义版本
+                  markdown_start = body.find("\\```markdown")
+                  if markdown_start == -1:
+                      # 如果仍然找不到，尝试只查找```
+                      markdown_start = body.find("```")
+                      if markdown_start == -1:
+                          print("警告: 未找到任何Markdown代码块标记")
+                          
+                          # 尝试寻找转义的标题标记（\#）
+                          if "\\#" in body:
+                              print("尝试提取转义的Markdown内容")
+                              # 查找主要内容部分
+                              if "主要内容" in body:
+                                  content_start = body.find("主要内容") + len("主要内容")
+                                  content = body[content_start:].strip()
+                                  # 处理转义字符
+                                  content = unescape_markdown(content)
+                                  return content
+                          
+                          # 最后的尝试：使用表格提取
+                          section = extract_section(body, "主要内容")
+                          if section:
+                              return section
+                              
+                          return None
+              
+              # 找到Markdown块开始的位置（跳过```markdown行）
+              content_start = body.find("\n", markdown_start) + 1
+              if content_start <= 0:  # 没有找到换行符
+                  print("警告: Markdown代码块格式异常")
                   return None
               
-              # 调试信息    
-              print("找到主要内容部分:")
-              print("---BEGIN主要内容部分---")
-              print(section[:200] + ("..." if len(section) > 200 else ""))
-              print("---END主要内容部分---")
-                  
-              # 查找代码块
-              match = re.search(r'```(?:markdown)?\s*\n([\s\S]*?)\n```', section, re.DOTALL)
-              if not match:
-                  print("警告: 未找到主要内容代码块")
-                  return None
-                  
-              content = match.group(1).strip()
-              print("提取到内容长度:", len(content))
-              print("内容前200字符:", content[:200] + ("..." if len(content) > 200 else ""))
+              # 获取剩余全部内容
+              raw_content = body[content_start:]
               
-              # 不删除任何Markdown标记，保留原始格式
+              # 按行分割
+              lines = raw_content.split("\n")
+              
+              # 处理特殊情况：如果只有几行，直接返回
+              if len(lines) <= 3:
+                  content = "\n".join(lines)
+                  return content
+              
+              # 移除最后两行（通常是```和其他结束标记）
+              content_lines = lines[:-2]
+              
+              # 找到内容的结束位置（通常是```或表格结束）
+              end_index = len(content_lines)
+              for i, line in enumerate(content_lines):
+                  if line.strip() == "```" or line.strip() == "\\```":
+                      end_index = i
+                      break
+                  # 检测表格结束
+                  if line.startswith("|") and i > 10:  # 避免误判开头的表格
+                      if all(c in "|" for c in line.strip()):
+                          end_index = i
+                          break
+              
+              # 提取内容
+              content = "\n".join(content_lines[:end_index])
+              
+              # 处理转义字符
+              content = unescape_markdown(content)
+              content = content.replace('\\n', '\n')
+              
+              print(f"从Markdown块提取了{len(content_lines[:end_index])}行内容")
+              print("内容前100字符:", content[:100].replace("\n", "\\n") + ("..." if len(content) > 100 else ""))
+              
               return content
 
           # 主程序
           body = os.environ.get("ISSUE_BODY", "")
-          print("Issue内容:", body[:200] + "..." if len(body) > 200 else body)
+          print("Issue内容长度:", len(body))
+          print("Issue内容前300字符:", body[:300].replace("\n", "\\n") + ("..." if len(body) > 300 else ""))
 
-          # 提取各个部分
-          department = extract_section(body, "部门名称")
-          title = extract_section(body, "标题")
-          filename = extract_section(body, "文件名")
-          content = extract_content(body)
-
-          # 打印提取结果（调试用）
-          print(f"部门名称: {department}")
-          print(f"标题: {title}")
-          print(f"文件名: {filename}")
-          print(f"内容长度: {len(content) if content else 0}")
-
-          # 验证必要字段
-          missing = []
-          if not department:
-              missing.append("部门名称")
-          if not filename:
-              missing.append("文件名")
-          if not content:
-              missing.append("主要内容")
+          try:
+              # 尝试检测表格格式
+              if "|" in body and "-|-" in body:
+                  print("检测到可能的表格格式")
               
-          if missing:
-              print(f"错误: 缺少必要字段: {', '.join(missing)}")
+              # 提取各个部分
+              department = extract_section(body, "部门名称")
+              title = extract_section(body, "标题")
+              filename = extract_section(body, "文件名")
+              content = extract_content(body)
+              
+              print("提取结果:")
+              print(f"部门名称: {department}")
+              print(f"标题: {title}")
+              print(f"文件名: {filename}")
+              print(f"内容长度: {len(content) if content else 0}")
+              
+              # 验证必要字段
+              missing = []
+              if not department:
+                  missing.append("部门名称")
+              if not filename:
+                  missing.append("文件名")
+              if not content:
+                  missing.append("主要内容")
+                  
+              if missing:
+                  print(f"错误: 缺少必要字段: {', '.join(missing)}")
+                  sys.exit(1)
+              
+              # 输出到环境变量
+              with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+                  f.write(f"DEPARTMENT={department}\n")
+                  f.write(f"FILENAME={filename}\n")
+                  if title:
+                      f.write(f"TITLE={title}\n")
+                  f.write(f"CONTENT<<EOF_CONTENT\n{content}\nEOF_CONTENT\n")
+          except Exception as e:
+              print(f"提取过程中发生错误: {str(e)}")
+              import traceback
+              traceback.print_exc()
               sys.exit(1)
-
-          # 输出到环境变量
-          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-              f.write(f"DEPARTMENT={department}\n")
-              f.write(f"FILENAME={filename}\n")
-              if title:
-                  f.write(f"TITLE={title}\n")
-              f.write(f"CONTENT<<EOF_CONTENT\n{content}\nEOF_CONTENT\n")
           EOF
 
           # 执行提取脚本
