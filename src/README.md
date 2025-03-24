@@ -86,7 +86,7 @@ features:
 
   - title: 外联部
     icon: handshake
-    details: 职能描述占位符
+    details: 外联部负责拉取赞助保障活动经费，协同其他部门助力学院发展，彰显魅力担当。
     link: ./Outreach/
 
   - title: 社团管理部
