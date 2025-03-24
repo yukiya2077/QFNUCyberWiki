@@ -1,28 +1,39 @@
 name: Process Department Content
-
 on:
   issues:
     types: [opened, edited]
-
 permissions:
   contents: write
   pull-requests: write
   issues: write
-
 jobs:
   generate-content:
     runs-on: ubuntu-latest
     steps:
+      # 新增初始评论步骤
+      - name: 创建初始处理评论
+        id: initial-comment
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const result = await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '⏳ 正在处理您的请求，请勿重复提交...'
+            });
+            core.setOutput('comment_id', result.data.id);
+
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # 需要完整历史记录来创建新分支
+          fetch-depth: 0
 
       - name: 安装依赖
         run: |
           sudo wget -O /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v4.35.1/yq_linux_amd64
           sudo chmod +x /usr/local/bin/yq
-          pip install pyyaml          # 安装 Python YAML 库
+          pip install pyyaml
 
       - name: 提取模板字段
         id: extract-fields
@@ -379,3 +390,27 @@ jobs:
               repo: context.repo.repo,
               body: '❌ 错误：未找到与部门名称匹配的目录，请检查部门名称是否正确'
             })
+      # 在所有处理完成后添加更新评论步骤
+      - name: 更新处理状态评论
+        if: always()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const commentId = '${{ steps.initial-comment.outputs.comment_id }}';
+            const status = '${{ job.status }}';
+            const prUrl = '${{ steps.create-pr-api.outputs.pr_url || '' }}';
+            const errorMsg = '${{ steps.create-pr-api.outputs.error || '' }}';
+            
+            let body;
+            if (status === 'success' && prUrl) {
+              body = `✅ 处理完成！Pull Request已创建: [查看PR](${prUrl})`;
+            } else {
+              body = `❌ 处理失败：${errorMsg || '未知错误，请检查日志'}`;
+            }
+            
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: commentId,
+              body: body
+            });
