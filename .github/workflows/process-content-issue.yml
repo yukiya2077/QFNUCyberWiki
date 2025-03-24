@@ -329,7 +329,30 @@ jobs:
               console.log(`Error creating PR: ${error.message}`);
               return { error: error.message };
             }
-
+# 在所有处理完成后添加更新评论步骤
+      - name: 更新处理状态评论
+        if: always()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const commentId = '${{ steps.initial-comment.outputs.comment_id }}';
+            const status = '${{ job.status }}';
+            const prUrl = '${{ steps.create-pr-api.outputs.pr_url || '' }}';
+            const errorMsg = '${{ steps.create-pr-api.outputs.error || '' }}';
+            
+            let body;
+            if (status === 'success' && prUrl) {
+              body = `✅ 处理完成！Pull Request已创建: [查看PR](${prUrl})`;
+            } else {
+              body = `❌ 处理失败：${errorMsg || '未知错误，请检查日志'}`;
+            }
+            
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: commentId,
+              body: body
+            });
       - name: 通知PR创建成功
         if: ${{ success() && steps.create-pr-api.outcome == 'success' && contains(steps.create-pr-api.outputs.result, 'pr_number') }}
         uses: actions/github-script@v6
@@ -355,7 +378,7 @@ jobs:
               repo: context.repo.repo,
               body: `✅ 文件已成功生成！\n\nPull Request 已创建: [#${result.pr_number}](${result.pr_url})\n\n文件路径: \`${{ steps.generate-file.outputs.file_path }}\`\n\n当PR被合并时，此Issue将自动关闭，分支将自动删除。`
             });
-
+            
       - name: PR创建状态通知
         if: ${{ always() && (steps.create-pr-api.outcome == 'failure' || !contains(steps.create-pr-api.outputs.result, 'pr_number')) }}
         uses: actions/github-script@v6
@@ -390,27 +413,3 @@ jobs:
               repo: context.repo.repo,
               body: '❌ 错误：未找到与部门名称匹配的目录，请检查部门名称是否正确'
             })
-      # 在所有处理完成后添加更新评论步骤
-      - name: 更新处理状态评论
-        if: always()
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const commentId = '${{ steps.initial-comment.outputs.comment_id }}';
-            const status = '${{ job.status }}';
-            const prUrl = '${{ steps.create-pr-api.outputs.pr_url || '' }}';
-            const errorMsg = '${{ steps.create-pr-api.outputs.error || '' }}';
-            
-            let body;
-            if (status === 'success' && prUrl) {
-              body = `✅ 处理完成！Pull Request已创建: [查看PR](${prUrl})`;
-            } else {
-              body = `❌ 处理失败：${errorMsg || '未知错误，请检查日志'}`;
-            }
-            
-            await github.rest.issues.updateComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              comment_id: commentId,
-              body: body
-            });
