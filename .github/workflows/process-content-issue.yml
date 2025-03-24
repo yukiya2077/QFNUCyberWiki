@@ -39,6 +39,7 @@ jobs:
                   
               marker = "### " + section_name
               if marker not in body:
+                  print(f"警告: 未找到标记 '{marker}'")
                   return None
                   
               # 找到部分的开始
@@ -54,30 +55,34 @@ jobs:
               return section_content.strip()
               
           def extract_content(body):
-              """提取主要内容（代码块）"""
+              """提取主要内容（代码块）- 保留完整Markdown格式"""
               section = extract_section(body, "主要内容")
               if not section:
+                  print("警告: 未找到'主要内容'部分")
                   return None
               
-              print("提取到的主要内容区段长度:", len(section))
-              
-              # 使用正则表达式提取代码块内容，适用于多行内容
-              code_block_pattern = r'```(?:markdown)?\n([\s\S]*?)```'
-              matches = re.findall(code_block_pattern, section)
-              
-              if not matches:
-                  print("警告: 未找到Markdown代码块")
+              # 调试信息    
+              print("找到主要内容部分:")
+              print("---BEGIN主要内容部分---")
+              print(section[:200] + ("..." if len(section) > 200 else ""))
+              print("---END主要内容部分---")
+                  
+              # 查找代码块
+              match = re.search(r'```(?:markdown)?\s*\n([\s\S]*?)\n```', section, re.DOTALL)
+              if not match:
+                  print("警告: 未找到主要内容代码块")
                   return None
+                  
+              content = match.group(1).strip()
+              print("提取到内容长度:", len(content))
+              print("内容前200字符:", content[:200] + ("..." if len(content) > 200 else ""))
               
-              # 提取最大的代码块（如果有多个）
-              content = max(matches, key=len)
-              print(f"提取的代码块内容长度: {len(content)}")
-              
-              return content.strip()
+              # 不删除任何Markdown标记，保留原始格式
+              return content
 
           # 主程序
           body = os.environ.get("ISSUE_BODY", "")
-          print("Issue内容长度:", len(body))
+          print("Issue内容:", body[:200] + "..." if len(body) > 200 else body)
 
           # 提取各个部分
           department = extract_section(body, "部门名称")
@@ -90,10 +95,6 @@ jobs:
           print(f"标题: {title}")
           print(f"文件名: {filename}")
           print(f"内容长度: {len(content) if content else 0}")
-          
-          # 如果内容超过500字符，仅输出前500字符用于检查
-          if content and len(content) > 500:
-              print(f"内容前500字符: {content[:500]}...")
 
           # 验证必要字段
           missing = []
