@@ -94,6 +94,11 @@ features:
     details: 社团管理部是连接学院与校社管部的桥梁，负责管理院内社团、监督活动实施，并通过策划丰富活动促进学生全面发展。
     link: ./ClubManagement/
 
+  - title: 科创部
+    icon: flask
+    details: 负责各类科创竞赛的宣传动员、作品收集推选等相关工作；统计学院论文专利及竞赛情况；收集整理科创比赛相关信息。
+    link: ./SciTech/
+
 copyright: false
 footer: 使用 <a href="https://theme-hope.vuejs.press/zh/" target="_blank">VuePress Theme Hope</a> 主题 | MIT 协议, 版权所有 © 2025-至今 QFNUCyberWiki
 ---
