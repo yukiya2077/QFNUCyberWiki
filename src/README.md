@@ -61,7 +61,7 @@ features:
 
   - title: 体育部
     icon: person-running
-    details: 职能描述占位符
+    details: 主要负责组织开展各类体育活动，协助学院开展体育活动，统计体测成绩，推动体育文化建设，提高师生身体素质和运动水平。
     link: ./Sports/
 
   - title: 宿卫部
@@ -81,7 +81,7 @@ features:
 
   - title: 组织部
     icon: people-group
-    details: 职能描述占位符
+    details: 主要协助党委、党支部做好党员教育管理、党员发展、党费管理等工作，整理入党材料，组织时政学习和宣传，提高同学政治素养与思想觉悟，引导同学积极向党组织靠拢。
     link: ./Organization/
 
   - title: 外联部
