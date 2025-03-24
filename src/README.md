@@ -99,6 +99,11 @@ features:
     details: 负责各类科创竞赛的宣传动员、作品收集推选等相关工作；统计学院论文专利及竞赛情况；收集整理科创比赛相关信息。
     link: ./SciTech/
 
+  - title: 纪检部
+    icon: scale-balanced
+    details: 职能描述占位符
+    link: ./DisciplineInspection/
+
 copyright: false
 footer: 使用 <a href="https://theme-hope.vuejs.press/zh/" target="_blank">VuePress Theme Hope</a> 主题 | MIT 协议, 版权所有 © 2025-至今 QFNUCyberWiki
 ---
