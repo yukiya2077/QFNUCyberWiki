@@ -1,6 +1,6 @@
 ---
 title: 组织部
-icon: people-group
+icon: star
 ---
 
 # 组织部

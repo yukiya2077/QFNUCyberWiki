@@ -80,7 +80,7 @@ features:
     link: ./SocialPractice/
 
   - title: 组织部
-    icon: people-group
+    icon: star
     details: 主要协助党委、党支部做好党员教育管理、党员发展、党费管理等工作，整理入党材料，组织时政学习和宣传，提高同学政治素养与思想觉悟，引导同学积极向党组织靠拢。
     link: ./Organization/
 

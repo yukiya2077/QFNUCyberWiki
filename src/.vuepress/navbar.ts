@@ -65,7 +65,7 @@ export default navbar([
   {
     text: "组织部",
     link: "/Organization/",
-    icon: "people-group",
+    icon: "star",
   },
   {
     text: "外联部",
