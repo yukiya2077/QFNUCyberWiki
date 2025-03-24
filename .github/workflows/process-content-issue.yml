@@ -197,8 +197,19 @@ jobs:
           FILENAME: ${{ steps.extract-fields.outputs.FILENAME }}
           FILE_PATH: ${{ steps.generate-file.outputs.file_path }}
         run: |
-          # 创建并切换到新分支
-          BRANCH_NAME="content-update/$FILENAME-${{ github.run_id }}"
+          # 使用时间戳创建唯一分支名
+          TIMESTAMP=$(date +%Y%m%d%H%M%S)
+          BRANCH_NAME="content-update/$FILENAME-$TIMESTAMP"
+          echo "使用分支名: $BRANCH_NAME"
+          
+          # 检查分支是否已存在
+          git fetch origin
+          if git show-ref --verify --quiet "refs/remotes/origin/$BRANCH_NAME"; then
+            echo "分支 $BRANCH_NAME 已存在，使用新名称"
+            BRANCH_NAME="content-update/$FILENAME-$TIMESTAMP-$RANDOM"
+            echo "新分支名: $BRANCH_NAME"
+          fi
+          
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b $BRANCH_NAME
@@ -206,12 +217,17 @@ jobs:
           # 只添加生成的文件，不添加脚本文件
           git add "$FILE_PATH"
           git commit -m "添加内容: $FILENAME (部门: ${{ steps.extract-fields.outputs.DEPARTMENT }})"
-          git push origin $BRANCH_NAME
+          
+          # 使用--force确保推送成功
+          git push --force origin $BRANCH_NAME
+          
+          # 输出分支名
           echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
           echo "repo_url=https://github.com/${{ github.repository }}" >> $GITHUB_OUTPUT
 
       - name: 使用GitHub API创建PR
         id: create-pr-api
+        continue-on-error: true
         uses: actions/github-script@v6
         env:
           BRANCH_NAME: ${{ steps.create-branch.outputs.branch_name }}
@@ -261,50 +277,53 @@ jobs:
             }
 
       - name: 通知PR创建成功
-        if: steps.create-pr-api.outputs.pr_number
+        if: ${{ success() && steps.create-pr-api.outcome == 'success' && contains(steps.create-pr-api.outputs.result, 'pr_number') }}
         uses: actions/github-script@v6
-        env:
-          PR_URL: ${{ fromJSON(steps.create-pr-api.outputs.result).pr_url }}
-          PR_NUMBER: ${{ fromJSON(steps.create-pr-api.outputs.result).pr_number }}
-          FILE_PATH: ${{ steps.generate-file.outputs.file_path }}
         with:
           script: |
+            // 安全地解析JSON
+            let result;
+            try {
+              result = JSON.parse('${{ steps.create-pr-api.outputs.result }}');
+            } catch (error) {
+              console.log('Failed to parse PR result: ' + error.message);
+              return;
+            }
+            
+            if (!result || !result.pr_number || !result.pr_url) {
+              console.log('Invalid PR result format');
+              return;
+            }
+            
             await github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `✅ 文件已成功生成！\n\nPull Request 已创建: [#${process.env.PR_NUMBER}](${process.env.PR_URL})\n\n文件路径: \`${process.env.FILE_PATH}\`\n\n当PR被合并时，此Issue将自动关闭，分支将自动删除。`
-            })
+              body: `✅ 文件已成功生成！\n\nPull Request 已创建: [#${result.pr_number}](${result.pr_url})\n\n文件路径: \`${{ steps.generate-file.outputs.file_path }}\`\n\n当PR被合并时，此Issue将自动关闭，分支将自动删除。`
+            });
 
-      - name: PR创建失败处理
-        if: ${{ !steps.create-pr-api.outputs.pr_number }}
+      - name: PR创建状态通知
+        if: ${{ always() && (steps.create-pr-api.outcome == 'failure' || !contains(steps.create-pr-api.outputs.result, 'pr_number')) }}
         uses: actions/github-script@v6
-        env:
-          BRANCH_NAME: ${{ steps.create-branch.outputs.branch_name }}
-          REPO_URL: ${{ steps.create-branch.outputs.repo_url }}
-          FILE_PATH: ${{ steps.generate-file.outputs.file_path }}
-          ERROR: ${{ fromJSON(steps.create-pr-api.outputs.result).error }}
         with:
           script: |
+            // 尝试安全地获取错误信息
+            let errorMsg = '未知错误';
+            try {
+              const result = JSON.parse('${{ steps.create-pr-api.outputs.result || '{"error":"未知错误"}' }}');
+              if (result && result.error) {
+                errorMsg = result.error;
+              }
+            } catch (error) {
+              console.log('Failed to parse error result: ' + error.message);
+            }
+            
             await github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `✅ 文件已成功生成并提交到分支 \`${process.env.BRANCH_NAME}\`！
-
-              如果无法自动创建Pull Request，请手动完成以下步骤：
-              错误信息：${process.env.ERROR || '未知错误'}
-
-              请手动完成以下步骤：
-
-              1. 点击此链接创建PR: ${process.env.REPO_URL}/compare/main...${process.env.BRANCH_NAME}?expand=1
-              2. 设置标题为: "内容投稿: ${{ steps.extract-fields.outputs.DEPARTMENT }} - ${{ steps.extract-fields.outputs.TITLE || steps.extract-fields.outputs.FILENAME }}"
-              3. 在PR描述中添加 "closes #${context.issue.number}" 以便合并时自动关闭Issue
-              4. 审核文件 \`${process.env.FILE_PATH}\` 并提交PR
-              5. 勾选"自动删除head分支"选项
-
-              **提示**: 如需解决此问题，可以在仓库设置中启用"Allow GitHub Actions to create and approve pull requests"选项。`
-            })
+              body: `✅ 文件已成功生成并提交到分支 \`${{ steps.create-branch.outputs.branch_name }}\`！\n\n但无法自动创建Pull Request。错误信息：${errorMsg}\n\n请手动完成以下步骤：\n\n1. 点击此链接创建PR: ${{ steps.create-branch.outputs.repo_url }}/compare/main...${{ steps.create-branch.outputs.branch_name }}?expand=1\n2. 设置标题为: "内容投稿: ${{ steps.extract-fields.outputs.DEPARTMENT }} - ${{ steps.extract-fields.outputs.TITLE || steps.extract-fields.outputs.FILENAME }}"\n3. 在PR描述中添加 "closes #${context.issue.number}" 以便合并时自动关闭Issue\n4. 审核文件 \`${{ steps.generate-file.outputs.file_path }}\` 并提交PR\n5. 勾选"自动删除head分支"选项\n\n**提示**: 如需解决此问题，可以在仓库设置中启用"Allow GitHub Actions to create and approve pull requests"选项。`
+            });
 
       - name: 检查部门是否存在
         if: ${{ failure() && steps.find-department.outcome == 'failure' }}
