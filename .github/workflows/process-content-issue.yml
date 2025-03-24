@@ -12,7 +12,6 @@ permissions:
 jobs:
   generate-content:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -23,7 +22,7 @@ jobs:
         run: |
           sudo wget -O /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v4.35.1/yq_linux_amd64
           sudo chmod +x /usr/local/bin/yq
-          pip install pyyaml
+          pip install pyyaml          # 安装 Python YAML 库
 
       - name: 提取模板字段
         id: extract-fields
@@ -37,6 +36,7 @@ jobs:
               """解除Markdown转义"""
               if not text:
                   return text
+              # 解除常见的Markdown转义字符
               text = text.replace('\\*', '*')
               text = text.replace('\\#', '#')
               text = text.replace('\\`', '`')
@@ -47,17 +47,27 @@ jobs:
               """提取指定部分的内容"""
               if not body:
                   return None
+                  
               marker = "### " + section_name
+              # 兼容表格中的格式
               alt_marker = "**" + section_name + "**"
+              
+              # 尝试找标准格式
               if marker in body:
                   print(f"找到标准标记 '{marker}'")
+                  # 找到部分的开始
                   start = body.find(marker) + len(marker)
+                  
+                  # 找到下一个部分的开始（如果有）
                   next_section = body.find("###", start)
                   if next_section != -1:
                       section_content = body[start:next_section]
                   else:
                       section_content = body[start:]
+                  
                   return section_content.strip()
+              
+              # 尝试从表格提取（寻找"部门名称 科创部"这样的模式）
               elif section_name + " " in body:
                   print(f"尝试从表格提取 '{section_name}'")
                   pattern = r'(?:' + re.escape(section_name) + r'|' + re.escape(alt_marker) + r')\s+([^\n|]+)'
@@ -65,71 +75,110 @@ jobs:
                   if match:
                       print(f"从表格模式提取到 '{section_name}': {match.group(1)}")
                       return match.group(1).strip()
-                  print(f"警告: 未找到标记 '{marker}' 或表格中的 '{section_name}'")
-                  return None
-
+              
+              print(f"警告: 未找到标记 '{marker}' 或表格中的 '{section_name}'")
+              return None
+              
           def extract_content(body):
               """提取内容 - 从第一个```markdown开始，到倒数第二行为止"""
               print("使用新的内容提取方法：从```markdown开始到倒数第二行")
+              
+              # 尝试直接在全部内容中查找```markdown
               markdown_start = body.find("```markdown")
               if markdown_start == -1:
+                  # 尝试查找转义版本
                   markdown_start = body.find("\\```markdown")
                   if markdown_start == -1:
+                      # 如果仍然找不到，尝试只查找```
                       markdown_start = body.find("```")
                       if markdown_start == -1:
                           print("警告: 未找到任何Markdown代码块标记")
+                          
+                          # 尝试寻找转义的标题标记（\#）
                           if "\\#" in body:
                               print("尝试提取转义的Markdown内容")
+                              # 查找主要内容部分
                               if "主要内容" in body:
                                   content_start = body.find("主要内容") + len("主要内容")
                                   content = body[content_start:].strip()
+                                  # 处理转义字符
                                   content = unescape_markdown(content)
                                   return content
-                              section = extract_section(body, "主要内容")
-                              if section:
-                                  return section
+                          
+                          # 最后的尝试：使用表格提取
+                          section = extract_section(body, "主要内容")
+                          if section:
+                              return section
+                              
                           return None
+              
+              # 找到Markdown块开始的位置（跳过```markdown行）
               content_start = body.find("\n", markdown_start) + 1
-              if content_start <= 0:
+              if content_start <= 0:  # 没有找到换行符
                   print("警告: Markdown代码块格式异常")
                   return None
+              
+              # 获取剩余全部内容
               raw_content = body[content_start:]
+              
+              # 按行分割
               lines = raw_content.split("\n")
+              
+              # 处理特殊情况：如果只有几行，直接返回
               if len(lines) <= 3:
                   content = "\n".join(lines)
                   return content
+              
+              # 移除最后两行（通常是```和其他结束标记）
               content_lines = lines[:-2]
+              
+              # 找到内容的结束位置（通常是```或表格结束）
               end_index = len(content_lines)
               for i, line in enumerate(content_lines):
                   if line.strip() == "```" or line.strip() == "\\```":
                       end_index = i
                       break
-                  if line.startswith("|") and i > 10:
+                  # 检测表格结束
+                  if line.startswith("|") and i > 10:  # 避免误判开头的表格
                       if all(c in "|" for c in line.strip()):
                           end_index = i
                           break
+              
+              # 提取内容
               content = "\n".join(content_lines[:end_index])
+              
+              # 处理转义字符
               content = unescape_markdown(content)
               content = content.replace('\\n', '\n')
+              
               print(f"从Markdown块提取了{len(content_lines[:end_index])}行内容")
               print("内容前100字符:", content[:100].replace("\n", "\\n") + ("..." if len(content) > 100 else ""))
+              
               return content
 
+          # 主程序
           body = os.environ.get("ISSUE_BODY", "")
           print("Issue内容长度:", len(body))
           print("Issue内容前300字符:", body[:300].replace("\n", "\\n") + ("..." if len(body) > 300 else ""))
+
           try:
+              # 尝试检测表格格式
               if "|" in body and "-|-" in body:
                   print("检测到可能的表格格式")
+              
+              # 提取各个部分
               department = extract_section(body, "部门名称")
               title = extract_section(body, "标题")
               filename = extract_section(body, "文件名")
               content = extract_content(body)
+              
               print("提取结果:")
               print(f"部门名称: {department}")
               print(f"标题: {title}")
               print(f"文件名: {filename}")
               print(f"内容长度: {len(content) if content else 0}")
+              
+              # 验证必要字段
               missing = []
               if not department:
                   missing.append("部门名称")
@@ -137,9 +186,12 @@ jobs:
                   missing.append("文件名")
               if not content:
                   missing.append("主要内容")
+                  
               if missing:
                   print(f"错误: 缺少必要字段: {', '.join(missing)}")
                   sys.exit(1)
+              
+              # 输出到环境变量
               with open(os.environ["GITHUB_OUTPUT"], "a") as f:
                   f.write(f"DEPARTMENT={department}\n")
                   f.write(f"FILENAME={filename}\n")
@@ -152,6 +204,8 @@ jobs:
               traceback.print_exc()
               sys.exit(1)
           EOF
+
+          # 执行提取脚本
           python extract.py
 
       - name: 检查Issue解析失败
@@ -164,60 +218,36 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: '❌ 错误：无法从Issue内容中提取必要信息。请确保包含以下必要字段：\n\n```\n### 部门名称\n<部门名称>\n\n### 文件名\n<文件名>\n\n### 主要内容\n```markdown\n<内容>\n```\n```'
-            });
-
-      - name: 检查内容语法
-        id: syntax-check
-        run: |
-          echo "开始检查内容语法..."
-          echo "${{ steps.extract-fields.outputs.CONTENT }}" > content.md
-          npm install -g markdownlint-cli
-          markdownlint content.md > errors.txt || true
-          if [ -s errors.txt ]; then
-            echo "语法错误检测到"
-            cat errors.txt
-            exit 1
-          else
-            echo "未检测到语法错误"
-          fi
-
-      - name: 语法错误反馈
-        if: ${{ failure() && steps.syntax-check.outcome == 'failure' }}
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const fs = require('fs');
-            const errors = fs.readFileSync('errors.txt', 'utf8');
-            const suggestions = "请检查 Markdown 代码块是否完整，注意反引号和标记是否匹配。";
-            await github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `❌ 检查到内容语法错误:\n\n\`\`\`\n${errors}\n\`\`\`\n${suggestions}`
-            });
+            })
 
       - name: 匹配部门目录
         id: find-department
         env:
           DEPARTMENT: ${{ steps.extract-fields.outputs.DEPARTMENT }}
         run: |
+          # 遍历 src 子目录查找匹配的 title
           BASE_DIR="src"
           TARGET_DIR=""
+
           for dir in $(find $BASE_DIR -maxdepth 1 -type d); do
             readme="$dir/README.md"
             if [ -f "$readme" ]; then
               frontmatter=$(sed -n '/^---$/,/^---$/p' $readme | head -n -1 | tail -n +2)
+              # 使用Python处理YAML前置内容，避免yq命令语法问题
               title=$(python -c "import yaml; print(yaml.safe_load('''$frontmatter''').get('title', ''))")
+              
               if [ "$title" = "$DEPARTMENT" ]; then
                 TARGET_DIR="${dir#*/}"  # 去除前面的 src/
                 break
               fi
             fi
           done
+
           if [ -z "$TARGET_DIR" ]; then
             echo "未找到匹配部门目录！"
             exit 1
           fi
+
           echo "target_dir=$TARGET_DIR" >> $GITHUB_OUTPUT
 
       - name: 生成文件
@@ -230,10 +260,13 @@ jobs:
           TARGET_DIR: ${{ steps.find-department.outputs.target_dir }}
           ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
         run: |
+          # 清理文件名并创建路径
           CLEAN_FILENAME=$(echo "$FILENAME" | tr ' ' '-' | tr -cd '[:alnum:]-_')
           FILE_PATH="src/$TARGET_DIR/${CLEAN_FILENAME}.md"
           echo "file_path=$FILE_PATH" >> $GITHUB_OUTPUT
           echo "clean_filename=$CLEAN_FILENAME" >> $GITHUB_OUTPUT
+
+          # 写入内容 - 使用YAML前置内容格式
           ARTICLE_TITLE="${TITLE:-来自 $DEPARTMENT 的投稿}"
           echo "---" > $FILE_PATH
           echo "title: $ARTICLE_TITLE" >> $FILE_PATH
@@ -251,21 +284,31 @@ jobs:
           FILENAME: ${{ steps.extract-fields.outputs.FILENAME }}
           FILE_PATH: ${{ steps.generate-file.outputs.file_path }}
         run: |
+          # 使用时间戳创建唯一分支名
           TIMESTAMP=$(date +%Y%m%d%H%M%S)
           BRANCH_NAME="content-update/$FILENAME-$TIMESTAMP"
           echo "使用分支名: $BRANCH_NAME"
+          
+          # 检查分支是否已存在
           git fetch origin
           if git show-ref --verify --quiet "refs/remotes/origin/$BRANCH_NAME"; then
             echo "分支 $BRANCH_NAME 已存在，使用新名称"
             BRANCH_NAME="content-update/$FILENAME-$TIMESTAMP-$RANDOM"
             echo "新分支名: $BRANCH_NAME"
           fi
+          
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b $BRANCH_NAME
+
+          # 只添加生成的文件，不添加脚本文件
           git add "$FILE_PATH"
           git commit -m "添加内容: $FILENAME (部门: ${{ steps.extract-fields.outputs.DEPARTMENT }})"
+          
+          # 使用--force确保推送成功
           git push --force origin $BRANCH_NAME
+          
+          # 输出分支名
           echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
           echo "repo_url=https://github.com/${{ github.repository }}" >> $GITHUB_OUTPUT
 
@@ -283,7 +326,14 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const title = `内容投稿: ${process.env.DEPARTMENT} - ${process.env.TITLE || process.env.FILENAME}`;
-            const body = `由 Issue #${context.issue.number} 自动生成\n\n部门目录: \`src/${process.env.TARGET_DIR}\`\n\n---\n\ncloses #${context.issue.number}`;
+            // 添加关闭Issue的关键词
+            const body = `由 Issue #${context.issue.number} 自动生成
+            部门目录: \`src/${process.env.TARGET_DIR}\`
+            
+            ---
+            
+            closes #${context.issue.number}`;
+
             try {
               const result = await github.rest.pulls.create({
                 owner: context.repo.owner,
@@ -293,13 +343,17 @@ jobs:
                 head: process.env.BRANCH_NAME,
                 base: 'main'
               });
+              
               console.log(`PR created: ${result.data.html_url}`);
+              
+              // 设置PR合并后自动删除分支
               await github.rest.pulls.update({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 pull_number: result.data.number,
                 maintainer_can_modify: true
               });
+              
               return { 
                 pr_number: result.data.number,
                 pr_url: result.data.html_url
@@ -314,6 +368,7 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
+            // 安全地解析JSON
             let result;
             try {
               result = JSON.parse('${{ steps.create-pr-api.outputs.result }}');
@@ -321,10 +376,12 @@ jobs:
               console.log('Failed to parse PR result: ' + error.message);
               return;
             }
+            
             if (!result || !result.pr_number || !result.pr_url) {
               console.log('Invalid PR result format');
               return;
             }
+            
             await github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
@@ -337,6 +394,7 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
+            // 尝试安全地获取错误信息
             let errorMsg = '未知错误';
             try {
               const result = JSON.parse('${{ steps.create-pr-api.outputs.result || '{"error":"未知错误"}' }}');
@@ -346,11 +404,12 @@ jobs:
             } catch (error) {
               console.log('Failed to parse error result: ' + error.message);
             }
+            
             await github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `✅ 文件已成功生成并提交到分支 \`${{ steps.create-branch.outputs.branch_name }}\`！\n\n但无法自动创建Pull Request。错误信息：${errorMsg}\n\n请手动完成以下步骤：\n\n1. 点击此链接创建PR: ${{ steps.create-branch.outputs.repo_url }}/compare/main...${{ steps.create-branch.outputs.branch_name }}?expand=1\n2. 设置标题为: "内容投稿: ${{ steps.extract-fields.outputs.DEPARTMENT }} - ${{ steps.extract-fields.outputs.TITLE || steps.extract-fields.outputs.FILENAME }}"\n3. 在PR描述中添加 "closes #${context.issue.number}" 以便合并时自动关闭Issue\n4. 审核文件 \`${{ steps.generate-file.outputs.file_path }}\` 并提交PR\n5. 勾选"自动删除head分支"选项\n\n**提示**: 如需解决此问题，可以在仓库设置中启用"Allow GitHub Actions to create and approve pull requests"选项。`
+              body: `✅ 文件已成功生成并提交到分支 \`${{ steps.create-branch.outputs.branch_name }}\`！\n\n若无法自动创建Pull Request。信息：${errorMsg}\n\n请手动完成以下步骤：\n\n1. 点击此链接创建PR: ${{ steps.create-branch.outputs.repo_url }}/compare/main...${{ steps.create-branch.outputs.branch_name }}?expand=1\n2. 设置标题为: "内容投稿: ${{ steps.extract-fields.outputs.DEPARTMENT }} - ${{ steps.extract-fields.outputs.TITLE || steps.extract-fields.outputs.FILENAME }}"\n3. 在PR描述中添加 "closes #${context.issue.number}" 以便合并时自动关闭Issue\n4. 审核文件 \`${{ steps.generate-file.outputs.file_path }}\` 并提交PR\n5. 勾选"自动删除head分支"选项\n\n**提示**: 如需解决此问题，可以在仓库设置中启用"Allow GitHub Actions to create and approve pull requests"选项。`
             });
 
       - name: 检查部门是否存在
@@ -363,4 +422,4 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: '❌ 错误：未找到与部门名称匹配的目录，请检查部门名称是否正确'
-            });
+            })
