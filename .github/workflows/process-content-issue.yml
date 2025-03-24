@@ -4,12 +4,14 @@ on:
   issues:
     types: [opened, edited]
 
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
 jobs:
   generate-content:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -158,6 +160,7 @@ jobs:
           echo "target_dir=$TARGET_DIR" >> $GITHUB_OUTPUT
 
       - name: 生成文件
+        id: generate-file
         env:
           DEPARTMENT: ${{ steps.extract-fields.outputs.DEPARTMENT }}
           FILENAME: ${{ steps.extract-fields.outputs.FILENAME }}
@@ -168,6 +171,7 @@ jobs:
           # 清理文件名并创建路径
           CLEAN_FILENAME=$(echo "$FILENAME" | tr ' ' '-' | tr -cd '[:alnum:]-_')
           FILE_PATH="src/$TARGET_DIR/${CLEAN_FILENAME}.md"
+          echo "file_path=$FILE_PATH" >> $GITHUB_OUTPUT
           
           # 写入内容
           ARTICLE_TITLE="${TITLE:-来自 $DEPARTMENT 的投稿}"
@@ -177,7 +181,25 @@ jobs:
           echo -e "\n---\n" >> $FILE_PATH
           echo "> 投稿人: @${{ github.event.issue.user.login }}" >> $FILE_PATH
 
-      - name: 创建 Pull Request
+      - name: 创建分支并提交更改
+        id: create-branch
+        env:
+          FILENAME: ${{ steps.extract-fields.outputs.FILENAME }}
+        run: |
+          # 创建并切换到新分支
+          BRANCH_NAME="content-update/$FILENAME-${{ github.run_id }}"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b $BRANCH_NAME
+          git add .
+          git commit -m "添加内容: $FILENAME (部门: ${{ steps.extract-fields.outputs.DEPARTMENT }})"
+          git push origin $BRANCH_NAME
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+          echo "repo_url=https://github.com/${{ github.repository }}" >> $GITHUB_OUTPUT
+
+      - name: 尝试创建Pull Request
+        id: create-pr
+        continue-on-error: true
         uses: peter-evans/create-pull-request@v5
         env:
           DEPARTMENT: ${{ steps.extract-fields.outputs.DEPARTMENT }}
@@ -185,7 +207,7 @@ jobs:
           TITLE: ${{ steps.extract-fields.outputs.TITLE }}
           TARGET_DIR: ${{ steps.find-department.outputs.target_dir }}
         with:
-          branch: "content-update/${{ steps.extract-fields.outputs.FILENAME }}-${{ github.run_id }}"
+          branch: ${{ steps.create-branch.outputs.branch_name }}
           base: main
           title: "内容投稿: ${{ steps.extract-fields.outputs.DEPARTMENT }} - ${{ steps.extract-fields.outputs.TITLE || steps.extract-fields.outputs.FILENAME }}"
           body: |
@@ -193,6 +215,30 @@ jobs:
             部门目录: `src/${{ steps.find-department.outputs.target_dir }}`
           commit-message: "添加内容: ${{ steps.extract-fields.outputs.FILENAME }} (部门: ${{ steps.extract-fields.outputs.DEPARTMENT }})"
           labels: "content-submission"
+
+      - name: PR创建失败处理
+        if: steps.create-pr.outcome == 'failure'
+        uses: actions/github-script@v6
+        env:
+          BRANCH_NAME: ${{ steps.create-branch.outputs.branch_name }}
+          REPO_URL: ${{ steps.create-branch.outputs.repo_url }}
+          FILE_PATH: ${{ steps.generate-file.outputs.file_path }}
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `✅ 文件已成功生成并提交到分支 \`${process.env.BRANCH_NAME}\`！
+
+              但由于GitHub Actions权限限制，无法自动创建Pull Request。请手动完成以下步骤：
+
+              1. 点击此链接创建PR: ${process.env.REPO_URL}/compare/main...${process.env.BRANCH_NAME}?expand=1
+              2. 设置标题为: "内容投稿: ${{ steps.extract-fields.outputs.DEPARTMENT }} - ${{ steps.extract-fields.outputs.TITLE || steps.extract-fields.outputs.FILENAME }}"
+              3. 审核文件 \`${process.env.FILE_PATH}\` 并提交PR
+
+              **提示**: 如需解决此问题，可以在仓库设置中启用"Allow GitHub Actions to create and approve pull requests"选项。`
+            })
 
       - name: 检查部门是否存在
         if: ${{ failure() && steps.find-department.outcome == 'failure' }}
