@@ -21,7 +21,7 @@ actions:
 features:
   - title: 办公室
     icon: building
-    details: 职能描述占位符
+    details: 办公室是团委学生会的中枢神经，负责管理整个团委学生会的日常事务，协助开展大型活动，负责与老师沟通，作为老师、主席团与其他部门之间的桥梁，促进学生会各个部门的统筹和协调。
     link: ./Office/
 
   - title: 秘书处
@@ -46,7 +46,7 @@ features:
 
   - title: 权益部
     icon: scale-balanced
-    details: 职能描述占位符
+    details: 聚焦师生权益，收集反馈、协调资源，化解难题，保障权益落实。维护权益、倾听诉求、对接各方，全力为师生营造良好环境。深入调研权益问题，积极沟通协调，推动师生权益保障工作。
     link: ./Rights/
 
   - title: 文艺部
