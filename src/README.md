@@ -101,7 +101,7 @@ features:
 
   - title: 纪检部
     icon: scale-balanced
-    details: 职能描述占位符
+    details: 负责早晚自习、专业课出勤情况和宿舍晚归情况的检查，查处违规违纪行为，协助其他部门活动的有序进行，促进学院健康发展。
     link: ./DisciplineInspection/
 
 copyright: false
