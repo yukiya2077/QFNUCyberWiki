@@ -1,6 +1,6 @@
 ---
 title: 科创部
-icon: flask
+icon: microchip
 ---
 
 # 科创部

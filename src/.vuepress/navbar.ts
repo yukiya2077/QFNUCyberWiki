@@ -77,4 +77,9 @@ export default navbar([
     link: "/DisciplineInspection/",
     icon: "scale-balanced",
   },
+  {
+    text: "科创部",
+    link: "/SciTech/",
+    icon: "microchip",
+  },
 ]);

@@ -16,4 +16,5 @@ export default sidebar({
   "/SecretariatOffice/": "structure",
   "/Organization/": "structure",
   "/Outreach/": "structure",
+  "/SciTech/": "structure",
 });
