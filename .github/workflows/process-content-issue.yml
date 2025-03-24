@@ -26,8 +26,7 @@ jobs:
         env:
           ISSUE_BODY: ${{ github.event.issue.body }}
         run: |
-          # 使用更简单的Python解析方法
-          python - <<EOF
+          cat > extract.py << 'EOF'
           import os, sys
 
           def extract_section(body, section_name):
@@ -35,7 +34,7 @@ jobs:
               if not body:
                   return None
                   
-              marker = f"### {section_name}"
+              marker = "### " + section_name
               if marker not in body:
                   return None
                   
@@ -75,7 +74,7 @@ jobs:
               return section[start:end].strip()
 
           # 主程序
-          body = os.environ.get('ISSUE_BODY', '')
+          body = os.environ.get("ISSUE_BODY", "")
           print("Issue内容:", body[:100] + "..." if len(body) > 100 else body)
           
           # 提取各个部分
@@ -104,13 +103,16 @@ jobs:
               sys.exit(1)
           
           # 输出到环境变量
-          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
               f.write(f"DEPARTMENT={department}\n")
               f.write(f"FILENAME={filename}\n")
               if title:
                   f.write(f"TITLE={title}\n")
-              f.write(f"CONTENT<<EOF\n{content}\nEOF\n")
+              f.write(f"CONTENT<<EOF_CONTENT\n{content}\nEOF_CONTENT\n")
           EOF
+          
+          # 执行提取脚本
+          python extract.py
 
       - name: 检查Issue解析失败
         if: ${{ failure() && steps.extract-fields.outcome == 'failure' }}
