@@ -1,0 +1,122 @@
+name: Process Department Content
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  generate-content:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 需要完整历史记录来创建新分支
+
+      - name: 安装依赖
+        run: |
+          sudo apt-get install -y yq  # 安装 YAML 处理器
+          pip install pyyaml          # 安装 Python YAML 库
+
+      - name: 提取模板字段
+        id: extract-fields
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: |
+          # 使用 Python 解析字段
+          python - <<EOF
+          import os, re, yaml
+          from pathlib import Path
+
+          body = os.environ['ISSUE_BODY']
+          patterns = {
+              'department': r'### 部门名称\s*\n+(.*?)(?=\n###|$)',
+              'filename': r'### 文件名\s*\n+(.*?)(?=\n###|$)',
+              'content': r'### 主要内容\s*\n+```markdown\n(.*?)\n```(?=\n###|$)',
+          }
+          extracted = {k: re.search(v, body, re.DOTALL).group(1).strip() for k,v in patterns.items()}
+          
+          # 输出到环境变量
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write(f"DEPARTMENT={extracted['department']}\n")
+              f.write(f"FILENAME={extracted['filename']}\n")
+              f.write(f"CONTENT<<EOF\n{extracted['content']}\nEOF\n")
+          EOF
+
+      - name: 匹配部门目录
+        id: find-department
+        env:
+          DEPARTMENT: ${{ steps.extract-fields.outputs.DEPARTMENT }}
+        run: |
+          # 遍历 src 子目录查找匹配的 title
+          BASE_DIR="src"
+          TARGET_DIR=""
+          
+          for dir in $(find $BASE_DIR -maxdepth 1 -type d); do
+            readme="$dir/README.md"
+            if [ -f "$readme" ]; then
+              frontmatter=$(sed -n '/^---$/,/^---$/p' $readme | head -n -1 | tail -n +2)
+              title=$(echo "$frontmatter" | yq eval '.title' -)
+              
+              if [ "$title" = "$DEPARTMENT" ]; then
+                TARGET_DIR="${dir#*/}"  # 去除前面的 src/
+                break
+              fi
+            fi
+          done
+
+          if [ -z "$TARGET_DIR" ]; then
+            echo "未找到匹配部门目录！"
+            exit 1
+          fi
+
+          echo "target_dir=$TARGET_DIR" >> $GITHUB_OUTPUT
+
+      - name: 生成文件
+        env:
+          DEPARTMENT: ${{ steps.extract-fields.outputs.DEPARTMENT }}
+          FILENAME: ${{ steps.extract-fields.outputs.FILENAME }}
+          CONTENT: ${{ steps.extract-fields.outputs.CONTENT }}
+          TARGET_DIR: ${{ steps.find-department.outputs.target_dir }}
+        run: |
+          # 清理文件名并创建路径
+          CLEAN_FILENAME=$(echo "$FILENAME" | tr ' ' '-' | tr -cd '[:alnum:]-_')
+          FILE_PATH="src/$TARGET_DIR/${CLEAN_FILENAME}.md"
+          
+          # 写入内容
+          echo "# 来自 $DEPARTMENT 的投稿" > $FILE_PATH
+          echo -e "\n---\n" >> $FILE_PATH
+          echo "$CONTENT" >> $FILE_PATH
+          echo -e "\n---\n" >> $FILE_PATH
+          echo "> 投稿人: @${{ github.event.issue.user.login }}" >> $FILE_PATH
+
+      - name: 创建 Pull Request
+        uses: peter-evans/create-pull-request@v5
+        env:
+          DEPARTMENT: ${{ steps.extract-fields.outputs.DEPARTMENT }}
+          FILENAME: ${{ steps.extract-fields.outputs.FILENAME }}
+          TARGET_DIR: ${{ steps.find-department.outputs.target_dir }}
+        with:
+          branch: "content-update/${{ steps.extract-fields.outputs.FILENAME }}-${{ github.run_id }}"
+          base: main
+          title: "内容投稿: ${{ steps.extract-fields.outputs.DEPARTMENT }} - ${{ steps.extract-fields.outputs.FILENAME }}"
+          body: |
+            由 Issue #${{ github.event.issue.number }} 自动生成
+            部门目录: `src/${{ steps.find-department.outputs.target_dir }}`
+          commit-message: "添加内容: ${{ steps.extract-fields.outputs.FILENAME }} (部门: ${{ steps.extract-fields.outputs.DEPARTMENT }})"
+          labels: "content-submission"
+
+      - name: 检查部门是否存在
+        if: ${{ failure() && steps.find-department.outcome == 'failure' }}
+        uses: actions/github-script@v6
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '❌ 错误：未找到与部门名称匹配的目录，请检查部门名称是否正确'
+            })
