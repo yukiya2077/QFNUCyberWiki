@@ -1,7 +1,7 @@
 name: Process Department Content
 on:
   issues:
-    types: [opened, edited, labeled]
+    types: [labeled]
 permissions:
   contents: write
   pull-requests: write
@@ -9,8 +9,20 @@ permissions:
 jobs:
   generate-content:
     runs-on: ubuntu-latest
-    if: contains(github.event.issue.labels.*.name, 'new-content')
+    if: contains(github.event.issue.labels.*.name, 'new-content') && !contains(github.event.issue.labels.*.name, 'processing')
     steps:
+      # 添加处理中标签以防止重复处理
+      - name: 添加处理中标签
+        uses: actions/github-script@v6
+        with:
+          script: |
+            await github.rest.issues.addLabels({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: ['processing']
+            });
+
       # 新增初始评论步骤
       - name: 创建初始处理评论
         id: initial-comment
