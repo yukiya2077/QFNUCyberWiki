@@ -180,8 +180,8 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            await github.rest.issues.createComment({
-              issue_number: context.issue.number,
+            await github.rest.issues.updateComment({
+              comment_id: ${{ steps.initial-comment.outputs.comment_id }},
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: '❌ 错误：无法从Issue内容中提取必要信息。请确保包含以下必要字段：\n\n```\n### 部门名称\n<部门名称>\n\n### 文件名\n<文件名>\n\n### 主要内容\n```markdown\n<内容>\n```\n```'
@@ -349,8 +349,8 @@ jobs:
               return;
             }
             
-            await github.rest.issues.createComment({
-              issue_number: context.issue.number,
+            await github.rest.issues.updateComment({
+              comment_id: ${{ steps.initial-comment.outputs.comment_id }},
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: `✅ 文件已成功生成！\n\nPull Request 已创建: [#${result.pr_number}](${result.pr_url})\n\n文件路径: \`${{ steps.generate-file.outputs.file_path }}\`\n\n当PR被合并时，此Issue将自动关闭，分支将自动删除。`
@@ -372,8 +372,8 @@ jobs:
               console.log('Failed to parse error result: ' + error.message);
             }
             
-            await github.rest.issues.createComment({
-              issue_number: context.issue.number,
+            await github.rest.issues.updateComment({
+              comment_id: ${{ steps.initial-comment.outputs.comment_id }},
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: `✅ 文件已成功生成并提交到分支 \`${{ steps.create-branch.outputs.branch_name }}\`！\n\n若无法自动创建Pull Request。信息：${errorMsg}\n\n请手动完成以下步骤：\n\n1. 点击此链接创建PR: ${{ steps.create-branch.outputs.repo_url }}/compare/main...${{ steps.create-branch.outputs.branch_name }}?expand=1\n2. 设置标题为: "内容投稿: ${{ steps.extract-fields.outputs.DEPARTMENT }} - ${{ steps.extract-fields.outputs.TITLE || steps.extract-fields.outputs.FILENAME }}"\n3. 在PR描述中添加 "closes #${context.issue.number}" 以便合并时自动关闭Issue\n4. 审核文件 \`${{ steps.generate-file.outputs.file_path }}\` 并提交PR\n5. 勾选"自动删除head分支"选项\n\n**提示**: 如需解决此问题，可以在仓库设置中启用"Allow GitHub Actions to create and approve pull requests"选项。`
@@ -384,8 +384,8 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            await github.rest.issues.createComment({
-              issue_number: context.issue.number,
+            await github.rest.issues.updateComment({
+              comment_id: ${{ steps.initial-comment.outputs.comment_id }},
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: '❌ 错误：未找到与部门名称匹配的目录，请检查部门名称是否正确'
