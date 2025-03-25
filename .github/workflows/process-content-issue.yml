@@ -9,7 +9,7 @@ permissions:
 jobs:
   generate-content:
     runs-on: ubuntu-latest
-    if: contains(github.event.issue.labels.*.name, 'new-content') && !contains(github.event.issue.labels.*.name, 'processing')
+    if: contains(github.event.issue.labels.*.name, 'new-content') && !contains(github.event.issue.labels.*.name, '处理中')
     steps:
       # 添加处理中标签以防止重复处理
       - name: 添加处理中标签
@@ -20,7 +20,7 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              labels: ['processing']
+              labels: ['处理中']
             });
 
       # 新增初始评论步骤
@@ -403,3 +403,29 @@ jobs:
               repo: context.repo.repo,
               body: '❌ 错误：未找到与部门名称匹配的目录，请检查部门名称是否正确'
             })
+
+      # 无论成功失败，处理完成后更新标签
+      - name: 更新处理状态标签
+        if: always()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            // 移除处理中标签
+            try {
+              await github.rest.issues.removeLabel({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: '处理中'
+              });
+            } catch (error) {
+              console.log('移除处理中标签失败:', error.message);
+            }
+            
+            // 添加处理完成标签
+            await github.rest.issues.addLabels({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: ['处理完成']
+            });
