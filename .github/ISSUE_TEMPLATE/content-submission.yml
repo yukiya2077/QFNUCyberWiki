@@ -1,7 +1,7 @@
 name: 内容提交模板
 description: 使用此模板提交内容
 title: "[内容]: "
-labels: ["content"]
+labels: ["new-content"]
 body:
   - type: markdown
     attributes:
