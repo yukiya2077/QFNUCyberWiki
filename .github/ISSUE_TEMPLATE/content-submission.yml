@@ -1,6 +1,6 @@
 name: 部门内容提交模板
 description: 使用此模板提交内容
-title: "部门新文章"
+title: "部门新内容"
 labels: ["new-content"]
 body:
   - type: markdown
