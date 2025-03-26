@@ -4,3 +4,4 @@ src/.vuepress/.temp
 .DS_Store
 .vscode
 src/.vuepress/dist
+.cursorrules
