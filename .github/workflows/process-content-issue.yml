@@ -261,7 +261,7 @@ jobs:
       - name: 创建分支并提交更改
         id: create-branch
         env:
-          FILENAME: ${{ steps.extract-fields.outputs.FILENAME }}
+          FILENAME: ${{ steps.generate-file.outputs.clean_filename }}
           FILE_PATH: ${{ steps.generate-file.outputs.file_path }}
         run: |
           # 使用时间戳创建唯一分支名
@@ -299,7 +299,7 @@ jobs:
         env:
           BRANCH_NAME: ${{ steps.create-branch.outputs.branch_name }}
           DEPARTMENT: ${{ steps.extract-fields.outputs.DEPARTMENT }}
-          FILENAME: ${{ steps.extract-fields.outputs.FILENAME }}
+          FILENAME: ${{ steps.generate-file.outputs.clean_filename }}
           TITLE: ${{ steps.extract-fields.outputs.TITLE }}
           TARGET_DIR: ${{ steps.find-department.outputs.target_dir }}
         with:
