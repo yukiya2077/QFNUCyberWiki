@@ -30,7 +30,7 @@ body:
     id: filename
     attributes:
       label: 文件名
-      description: 请提供一个英文文件名（不包含空格，可使用连字符或下划线，不需要带文件后缀，例如`hello`而不是`hello.md`）
+      description: 请提供一个英文文件名（🚫不要有空格，⭕可用下划线，不需要带文件后缀，例如`hello`而不是`hello.md`）
       placeholder: 例如：phishing-prevention-guide
     validations:
       required: false
