@@ -9,7 +9,7 @@ tags:
 
 # 如何用剪映制作专业级校园视频？学生党必学剪辑攻略
 
-<div class="notification">
+<div class="notification" @click="preventDefault($event)">
   <div class="notiglow"></div>
   <div class="notiborderglow"></div>
   <div class="notititle">剪映视频剪辑指南</div>
@@ -21,7 +21,7 @@ tags:
 
 ## 一、素材准备与规划
 
-<div class="cards-container">
+<div class="cards-container" @click="preventDefault($event)">
   <div class="card">
     <div class="card-content">
       <div class="card-top">
@@ -33,7 +33,7 @@ tags:
         <svg width="32" viewBox="0 -960 960 960" height="32" xmlns="http://www.w3.org/2000/svg"><path d="M226-160q-28 0-47-19t-19-47q0-28 19-47t47-19q28 0 47 19t19 47q0 28-19 47t-47 19Zm254 0q-28 0-47-19t-19-47q0-28 19-47t47-19q28 0 47 19t19 47q0 28-19 47t-47 19Zm254 0q-28 0-47-19t-19-47q0-28 19-47t47-19q28 0 47 19t19 47q0 28-19 47t-47 19Z"></path></svg>
       </div>
     </div>
-    <div class="card-details">
+    <div class="card-details" @click="preventDefault($event)">
       <h4>拍摄设备详情</h4>
       <ul>
         <li>
@@ -66,7 +66,7 @@ tags:
         <svg width="32" viewBox="0 -960 960 960" height="32" xmlns="http://www.w3.org/2000/svg"><path d="M226-160q-28 0-47-19t-19-47q0-28 19-47t47-19q28 0 47 19t19 47q0 28-19 47t-47 19Zm254 0q-28 0-47-19t-19-47q0-28 19-47t47-19q28 0 47 19t19 47q0 28-19 47t-47 19Zm254 0q-28 0-47-19t-19-47q0-28 19-47t47-19q28 0 47 19t19 47q0 28-19 47t-47 19Z"></path></svg>
       </div>
     </div>
-    <div class="card-details">
+    <div class="card-details" @click="preventDefault($event)">
       <h4>素材整理方法</h4>
       <ul>
         <li>
@@ -99,7 +99,7 @@ tags:
         <svg width="32" viewBox="0 -960 960 960" height="32" xmlns="http://www.w3.org/2000/svg"><path d="M226-160q-28 0-47-19t-19-47q0-28 19-47t47-19q28 0 47 19t19 47q0 28-19 47t-47 19Zm254 0q-28 0-47-19t-19-47q0-28 19-47t47-19q28 0 47 19t19 47q0 28-19 47t-47 19Zm254 0q-28 0-47-19t-19-47q0-28 19-47t47-19q28 0 47 19t19 47q0 28-19 47t-47 19Z"></path></svg>
       </div>
     </div>
-    <div class="card-details">
+    <div class="card-details" @click="preventDefault($event)">
       <h4>基础设置指南</h4>
       <ul>
         <li>
@@ -126,36 +126,49 @@ tags:
 
 ## 二、核心剪辑步骤
 
-<div class="steps-container">
-  <div class="steps-cards">
-    <div 
-      v-for="(card, index) in cards" 
-      :key="index"
-      class="step-card"
-      :class="card.color"
-      @mouseover="activePanel = card.id"
-      @mouseout="activePanel = null"
-    >
-      <p class="tip">{{ card.title }}</p>
-      <p class="second-text">{{ card.subtitle }}</p>
-    </div>
-  </div>
+<div class="core-panel">
+  <h3 class="blue-title">基础剪辑与节奏把控</h3>
+  <ul>
+    <li>
+      <strong>分割片段</strong>：拖动时间轴至需裁剪处，点击"分割"删除冗余内容。
+    </li>
+    <li>
+      <strong>调整顺序</strong>：长按拖动片段，按逻辑重组（如开幕式调至开场）。
+    </li>
+    <li>
+      <strong>变速处理</strong>：精彩瞬间用慢动作(0.5x)，冗长部分加速(1.5x)。
+    </li>
+  </ul>
+</div>
 
-  <div class="step-details" :class="detailsClass">
-    <div 
-      v-for="(panel, index) in panels" 
-      :key="index"
-      class="detail-panel"
-      :class="{ active: activePanel === panel.id }"
-    >
-      <h3>{{ panel.title }}</h3>
-      <ul>
-        <li v-for="(item, itemIndex) in panel.items" :key="itemIndex">
-          <strong>{{ item.title }}</strong>{{ item.content }}
-        </li>
-      </ul>
-    </div>
-  </div>
+<div class="core-panel">
+  <h3 class="blue-title">转场与特效添加</h3>
+  <ul>
+    <li>
+      <strong>转场效果</strong>：使用"叠化""模糊"等自然效果，避免过度花哨。
+    </li>
+    <li>
+      <strong>动态贴纸</strong>：为趣味场景添加"欢呼""星星"等贴纸增强氛围。
+    </li>
+    <li>
+      <strong>滤镜选择</strong>：校园场景用"清新"滤镜，毕业视频选"怀旧"色调。
+    </li>
+  </ul>
+</div>
+
+<div class="core-panel">
+  <h3 class="green-title">音频处理</h3>
+  <ul>
+    <li>
+      <strong>背景音乐</strong>：选择适配曲目，注意音量平衡避免盖过人声。
+    </li>
+    <li>
+      <strong>音效增强</strong>：添加环境音效突出高潮，使用淡入淡出让过渡自然。
+    </li>
+    <li>
+      <strong>语音优化</strong>：采访片段降噪处理，调整音量至-6dB~-3dB。
+    </li>
+  </ul>
 </div>
 
 
@@ -163,43 +176,40 @@ tags:
 
 ## 三、校园视频进阶技巧
 
-<div class="advanced-tips">
-  <div class="wave-cards">
-    <div 
-      v-for="(card, index) in advancedCards" 
-      :key="index"
-      class="e-card"
-      :class="{ 
-        'playing': currentCard === index,
-        'dimmed': currentCard !== index 
-      }"
-      @mouseover="currentCard = index"
-    >
-      <div class="wave"></div>
-      <div class="wave"></div>
-      <div class="wave"></div>
-      <div class="infotop">
-        <component :is="card.icon" class="icon"></component>
-        {{ card.title }}
-        <div class="name">{{ card.subtitle }}</div>
-      </div>
-    </div>
-  </div>
+<div class="advanced-panel">
+  <h3>字幕标注: 文字与信息展示</h3>
+  <ul>
+    <li>
+      <strong>动态字幕</strong>：点击"文字-新建文本"，为重要环节添加滚动字幕，字体推荐"兰亭黑"。
+    </li>
+    <li>
+      <strong>片头片尾</strong>：模板库搜索"校园"关键词，一键生成含校徽、口号的专业片头。
+    </li>
+  </ul>
+</div>
 
-  <div class="tips-content" :class="'content-' + currentCard">
-    <div 
-      v-for="(card, index) in advancedCards" 
-      :key="index"
-      class="content-panel"
-      :class="{ active: currentCard === index }"
-    >
-      <ul>
-        <li v-for="(item, itemIndex) in card.items" :key="itemIndex">
-          <strong>{{ item.title }}</strong>{{ item.content }}
-        </li>
-      </ul>
-    </div>
-  </div>
+<div class="advanced-panel">
+  <h3>多机位剪辑: 多视角展示技巧</h3>
+  <ul>
+    <li>
+      <strong>多视角切换</strong>：导入不同机位素材，通过"画中画"功能实现镜头切换。
+    </li>
+    <li>
+      <strong>分屏展示</strong>：使用"分屏"模板同时展示多个社团活动画面。
+    </li>
+  </ul>
+</div>
+
+<div class="advanced-panel">
+  <h3>互动设计: 观众互动元素</h3>
+  <ul>
+    <li>
+      <strong>弹幕风格</strong>：为轻松环节添加滚动弹幕文字，字体颜色选用亮黄色或粉色。
+    </li>
+    <li>
+      <strong>投票问答</strong>：利用"贴纸"功能插入虚拟按钮，支持后期添加互动链接。
+    </li>
+  </ul>
 </div>
 
 
@@ -211,19 +221,19 @@ tags:
 导出视频前请仔细检查以下关键参数设置，避免因格式、分辨率等问题影响最终效果。
 :::
 
-<div class="export-notice">
+<div class="export-notice" @click="preventDefault($event)">
   <div class="cube-container">
     <div class="cube">
-      <div class="face front">分辨率</div>
-      <div class="face back">帧率</div>
-      <div class="face right">文件命名</div>
-      <div class="face left">格式选择</div>
-      <div class="face top">音乐版权</div>
-      <div class="face bottom">肖像权</div>
+      <div class="face front" @click="preventDefault($event)">分辨率</div>
+      <div class="face back" @click="preventDefault($event)">帧率</div>
+      <div class="face right" @click="preventDefault($event)">文件命名</div>
+      <div class="face left" @click="preventDefault($event)">格式选择</div>
+      <div class="face top" @click="preventDefault($event)">音乐版权</div>
+      <div class="face bottom" @click="preventDefault($event)">肖像权</div>
     </div>
   </div>
 
-  <div class="notice-details">
+  <div class="notice-details" @click="preventDefault($event)">
     <div v-for="(detail, index) in exportDetails" :key="index" class="detail-item">
       <strong>{{ detail.title }}</strong>
       <p>{{ detail.content }}</p>
@@ -235,13 +245,32 @@ tags:
 通过以上技巧，即使是剪辑新手也能制作出富有感染力的校园视频。剪映的模板化设计与细节调整功能，让创作既高效又充满个性化。开始你的校园影像记录之旅吧！
 :::
 
-<div class="floating-card-container">
-  <div class="one-div">
+<div class="floating-card-container" @click="preventDefault($event)">
+  <div class="one-div" @click="preventDefault($event)">
     <div class="text">让你凑热闹，这下都没啦！！</div>
   </div>
 </div>
 
 <style scoped>
+.notification, .card, .step-card, .e-card, .face, .cube, .cube-container, .floating-card-container, .one-div {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  touch-action: none;
+}
+
+.steps-container *, .advanced-tips * {
+  cursor: default;
+  pointer-events: none;
+}
+
+.step-card, .e-card {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
 .notification {
   display: flex;
   flex-direction: column;
@@ -336,9 +365,10 @@ tags:
 
 .cards-container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 2rem;
-  padding: 2rem 0;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 3rem;
+  padding: 3rem 0;
+  margin: 2rem 0;
 }
 
 .card {
@@ -347,9 +377,11 @@ tags:
   color: black;
   position: relative;
   border-radius: 2.5em;
-  padding: 2em;
+  padding: 2.5em;
   transition: all 0.4s ease;
   overflow: hidden;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+  margin-bottom: 1rem;
 }
 
 .card .card-content {
@@ -520,6 +552,7 @@ tags:
   color: white;
   cursor: pointer;
   transition: 400ms;
+  pointer-events: auto;
 }
 
 .step-card.red { background-color: #f43f5e; }
@@ -547,15 +580,25 @@ tags:
   transform: scale(0.95);
 }
 
+.step-details-wrapper {
+  flex: 1;
+  width: 100%;
+  position: relative;
+}
+
 .step-details {
   background: #3b82f6;
   border-radius: 10px;
   padding: 2rem;
   min-height: 300px;
-  transition: background-color 0.4s ease;
+  transition: opacity 0.4s ease;
   color: white;
-  flex: 1;
   width: 100%;
+  opacity: 0; 
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
 }
 
 .step-details.red-bg {
@@ -570,18 +613,10 @@ tags:
   background: #22c55e;
 }
 
-.detail-panel {
-  opacity: 0;
-  visibility: hidden;
-  transition: all 0.4s ease;
-  height: 0;
-  overflow: hidden;
-}
-
-.detail-panel.active {
+.step-details.active {
   opacity: 1;
-  visibility: visible;
-  height: auto;
+  display: block;
+  position: relative;
 }
 
 .detail-panel h3 {
@@ -620,166 +655,110 @@ tags:
   }
 }
 
-.advanced-tips {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-  margin: 2rem 0;
+/* 添加响应式调整 */
+@media (max-width: 768px) {
+  .cards-container {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  
+  .core-content, .advanced-content {
+    padding: 1.5rem;
+  }
+  
+  .cube-container {
+    width: 200px;
+    height: 200px;
+  }
+  
+  .face {
+    width: 200px;
+    height: 200px;
+    line-height: 200px;
+    font-size: 18px;
+  }
+  
+  .front { transform: translateZ(100px); }
+  .back { transform: rotateY(180deg) translateZ(100px); }
+  .right { transform: rotateY(90deg) translateZ(100px); }
+  .left { transform: rotateY(-90deg) translateZ(100px); }
+  .top { transform: rotateX(90deg) translateZ(100px); }
+  .bottom { transform: rotateX(-90deg) translateZ(100px); }
+  
+  .export-notice {
+    grid-template-columns: 1fr;
+  }
 }
 
-.wave-cards {
-  display: flex;
-  justify-content: center;
-  gap: 2rem;
-  margin: 2rem 0;
-}
-
-.e-card {
-  margin: 0;
-  background: transparent;
-  box-shadow: 0px 8px 28px -9px rgba(0,0,0,0.45);
-  position: relative;
-  width: 240px;
-  height: 330px;
+.advanced-content {
+  background: linear-gradient(145deg, #f8f9fa, #ffffff);
   border-radius: 16px;
-  overflow: hidden;
-  transition: all 0.4s ease;
+  padding: 2.5rem;
+  margin: 2rem 0;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
 }
 
-.e-card.dimmed {
-  opacity: 0.5;
-  filter: grayscale(0.8);
+.advanced-panel {
+  margin-bottom: 2.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  position: relative;
+  transition: all 0.3s ease;
+  padding-left: 1rem;
 }
 
-.e-card.dimmed:hover {
-  opacity: 1;
-  filter: grayscale(0);
-}
-
-.wave {
+.advanced-panel:before {
+  content: "";
   position: absolute;
-  width: 540px;
-  height: 700px;
-  opacity: 0.6;
   left: 0;
   top: 0;
-  margin-left: -50%;
-  margin-top: -70%;
-  background: linear-gradient(744deg,#af40ff,#5b42f3 60%,#00ddeb);
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(to bottom, #6366f1, #8b5cf6);
+  border-radius: 4px;
 }
 
-.icon {
-  width: 3em;
-  margin-top: -1em;
-  padding-bottom: 1em;
+.advanced-panel:hover {
+  transform: translateX(5px);
 }
 
-.infotop {
-  text-align: center;
-  font-size: 20px;
-  position: absolute;
-  top: 5.6em;
-  left: 0;
-  right: 0;
-  color: rgb(255, 255, 255);
+.advanced-panel:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.advanced-panel h3 {
+  color: #4f46e5;
+  margin-top: 0;
+  margin-bottom: 1.2rem;
+  font-size: 1.5em;
   font-weight: 600;
+  letter-spacing: -0.025em;
 }
 
-.name {
-  font-size: 14px;
-  font-weight: 100;
-  position: relative;
-  top: 1em;
-  text-transform: lowercase;
-}
-
-.wave:nth-child(2),
-.wave:nth-child(3) {
-  top: 210px;
-}
-
-.playing .wave {
-  border-radius: 40%;
-  animation: wave 3000ms infinite linear;
-}
-
-.wave {
-  border-radius: 40%;
-  animation: wave 55s infinite linear;
-}
-
-.playing .wave:nth-child(2) {
-  animation-duration: 4000ms;
-}
-
-.wave:nth-child(2) {
-  animation-duration: 50s;
-}
-
-.playing .wave:nth-child(3) {
-  animation-duration: 5000ms;
-}
-
-.wave:nth-child(3) {
-  animation-duration: 45s;
-}
-
-@keyframes wave {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-.tips-content {
-  background: #f8f9fa;
-  border-radius: 16px;
-  padding: 2rem;
-  margin-top: 2rem;
-  position: relative;
-  min-height: 150px;
-}
-
-.content-panel {
-  opacity: 0;
-  visibility: hidden;
-  height: 0;
-  transform: translateX(-20px);
-  transition: all 0.4s ease;
-  position: absolute;
-  width: 100%;
-}
-
-.content-panel.active {
-  opacity: 1;
-  visibility: visible;
-  height: auto;
-  transform: translateX(0);
-}
-
-.content-panel ul {
+.advanced-panel ul {
   list-style: none;
   padding: 0;
   margin: 0;
 }
 
-.content-panel li {
-  margin-bottom: 1rem;
-  line-height: 1.6;
+.advanced-panel li {
+  margin-bottom: 1.25rem;
+  line-height: 1.7;
+  position: relative;
+  padding-left: 0.5rem;
 }
 
-.content-panel li strong {
-  color: #2c3e50;
+.advanced-panel li strong {
+  color: #1e40af;
   display: inline-block;
   margin-right: 0.5em;
-  font-weight: 600;
+  font-weight: 700;
+  background: rgba(99, 102, 241, 0.1);
+  padding: 0.1em 0.4em;
+  border-radius: 4px;
 }
-
-.content-0 { background: linear-gradient(to right, #ff6b6b10, #ff6b6b30); }
-.content-1 { background: linear-gradient(to right, #4ecdc410, #4ecdc430); }
-.content-2 { background: linear-gradient(to right, #45b7af10, #45b7af30); }
 
 .export-notice {
   display: grid;
@@ -930,137 +909,166 @@ tags:
     transform: rotateX(-15deg) translateY(0px);
   }
 }
+
+/* 添加全局标题样式 */
+h1, h2, h3, h4, h5, h6 {
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+h2 {
+  border-bottom: 1px solid #eaecef;
+  padding-bottom: 0.3rem;
+  position: relative;
+  font-size: 1.65rem;
+  margin-top: 2.5rem;
+}
+
+h2:after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 100px;
+  height: 3px;
+  background: linear-gradient(to right, #6366f1, #8b5cf6);
+}
+
+.core-content {
+  background: #f8f9fa;
+  border-radius: 16px;
+  padding: 2.5rem;
+  margin: 2rem 0;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+.core-panel {
+  background: #f8f9fa;
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  transition: all 0.3s ease;
+}
+
+.core-panel:hover {
+  transform: translateY(-5px);
+}
+
+.core-panel h3 {
+  margin-top: 0;
+  margin-bottom: 1.2rem;
+  font-size: 1.5em;
+  font-weight: 600;
+}
+
+.core-panel ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.core-panel li {
+  margin-bottom: 1.25rem;
+  line-height: 1.7;
+  position: relative;
+  padding-left: 0.5rem;
+}
+
+.core-panel li strong {
+  color: #1e40af;
+  display: inline-block;
+  margin-right: 0.5em;
+  font-weight: 700;
+  background: rgba(99, 102, 241, 0.1);
+  padding: 0.1em 0.4em;
+  border-radius: 4px;
+}
+
+.red-title {
+  color: #f43f5e;
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.5em;
+}
+
+.blue-title {
+  color: #3b82f6;
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.5em;
+}
+
+.green-title {
+  color: #22c55e;
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.5em;
+}
+
+.advanced-panel {
+  background: linear-gradient(145deg, #f8f9fa, #ffffff);
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  position: relative;
+  transition: all 0.3s ease;
+  padding-left: 2rem;
+}
+
+.advanced-panel:before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  background: linear-gradient(to bottom, #6366f1, #8b5cf6);
+  border-radius: 8px 0 0 8px;
+}
+
+.advanced-panel:hover {
+  transform: translateX(5px);
+}
+
+.advanced-panel h3 {
+  color: #4f46e5;
+  margin-top: 0;
+  margin-bottom: 1.2rem;
+  font-size: 1.5em;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+.advanced-panel ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.advanced-panel li {
+  margin-bottom: 1.25rem;
+  line-height: 1.7;
+  position: relative;
+  padding-left: 0.5rem;
+}
+
+.advanced-panel li strong {
+  color: #1e40af;
+  display: inline-block;
+  margin-right: 0.5em;
+  font-weight: 700;
+  background: rgba(99, 102, 241, 0.1);
+  padding: 0.1em 0.4em;
+  border-radius: 4px;
+}
 </style>
 
 <script>
 export default {
   data() {
     return {
-      activePanel: null,
-      cards: [
-        {
-          id: 'basic-edit',
-          title: '基础剪辑',
-          subtitle: '节奏把控与片段处理',
-          color: 'red'
-        },
-        {
-          id: 'transition',
-          title: '转场特效',
-          subtitle: '自然流畅的画面过渡',
-          color: 'blue'
-        },
-        {
-          id: 'audio',
-          title: '音频处理',
-          subtitle: '声音优化与音效添加',
-          color: 'green'
-        }
-      ],
-      panels: [
-        {
-          id: 'basic-edit',
-          title: '基础剪辑与节奏把控',
-          items: [
-            {
-              title: '分割片段',
-              content: '：拖动时间轴至需裁剪处，点击"分割"删除冗余内容。'
-            },
-            {
-              title: '调整顺序',
-              content: '：长按拖动片段，按逻辑重组（如开幕式调至开场）。'
-            },
-            {
-              title: '变速处理',
-              content: '：精彩瞬间用慢动作(0.5x)，冗长部分加速(1.5x)。'
-            }
-          ]
-        },
-        {
-          id: 'transition',
-          title: '转场与特效添加',
-          items: [
-            {
-              title: '转场效果',
-              content: '：使用"叠化""模糊"等自然效果，避免过度花哨。'
-            },
-            {
-              title: '动态贴纸',
-              content: '：为趣味场景添加"欢呼""星星"等贴纸增强氛围。'
-            },
-            {
-              title: '滤镜选择',
-              content: '：校园场景用"清新"滤镜，毕业视频选"怀旧"色调。'
-            }
-          ]
-        },
-        {
-          id: 'audio',
-          title: '音频处理',
-          items: [
-            {
-              title: '背景音乐',
-              content: '：选择适配曲目，注意音量平衡避免盖过人声。'
-            },
-            {
-              title: '音效增强',
-              content: '：添加环境音效突出高潮，使用淡入淡出让过渡自然。'
-            },
-            {
-              title: '语音优化',
-              content: '：采访片段降噪处理，调整音量至-6dB~-3dB。'
-            }
-          ]
-        }
-      ],
-      currentCard: 0,
-      advancedCards: [
-        {
-          title: '字幕标注',
-          subtitle: '文字与信息展示',
-          icon: 'TextIcon',
-          items: [
-            {
-              title: '动态字幕',
-              content: '：点击"文字-新建文本"，为重要环节添加滚动字幕，字体推荐"兰亭黑"。'
-            },
-            {
-              title: '片头片尾',
-              content: '：模板库搜索"校园"关键词，一键生成含校徽、口号的专业片头。'
-            }
-          ]
-        },
-        {
-          title: '多机位剪辑',
-          subtitle: '多视角展示技巧',
-          icon: 'CameraIcon',
-          items: [
-            {
-              title: '多视角切换',
-              content: '：导入不同机位素材，通过"画中画"功能实现镜头切换。'
-            },
-            {
-              title: '分屏展示',
-              content: '：使用"分屏"模板同时展示多个社团活动画面。'
-            }
-          ]
-        },
-        {
-          title: '互动设计',
-          subtitle: '观众互动元素',
-          icon: 'InteractionIcon',
-          items: [
-            {
-              title: '弹幕风格',
-              content: '：为轻松环节添加滚动弹幕文字，字体颜色选用亮黄色或粉色。'
-            },
-            {
-              title: '投票问答',
-              content: '：利用"贴纸"功能插入虚拟按钮，支持后期添加互动链接。'
-            }
-          ]
-        }
-      ],
       exportDetails: [
         {
           title: '分辨率',
@@ -1089,35 +1097,13 @@ export default {
       ]
     }
   },
-  computed: {
-    detailsClass() {
-      if (!this.activePanel) return 'blue-bg';
-      const card = this.cards.find(c => c.id === this.activePanel);
-      return card ? `${card.color}-bg` : 'blue-bg';
-    }
-  },
-  mounted() {
-    // 自动轮换卡片
-    setInterval(() => {
-      this.currentCard = (this.currentCard + 1) % this.advancedCards.length;
-    }, 5000);
-  },
-  components: {
-    TextIcon: {
-      template: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <path fill="currentColor" d="M4 5h16v2H4V5zm0 6h16v2H4v-2zm0 6h16v2H4v-2z"/>
-      </svg>`
-    },
-    CameraIcon: {
-      template: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <path fill="currentColor" d="M12 15a3 3 0 100-6 3 3 0 000 6z"/>
-        <path fill="currentColor" d="M20 4h-3.17l-1.24-1.35A1.99 1.99 0 0014.12 2H9.88c-.56 0-1.1.24-1.47.65L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 13c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/>
-      </svg>`
-    },
-    InteractionIcon: {
-      template: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/>
-      </svg>`
+  methods: {
+    preventDefault(event) {
+      if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      return false;
     }
   }
 }
