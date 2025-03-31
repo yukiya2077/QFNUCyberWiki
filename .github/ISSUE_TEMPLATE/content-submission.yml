@@ -1,22 +1,22 @@
 name: 部门内容提交模板
 description: 使用此模板提交内容
-title: "部门新内容"
+title: "部门新内容（此处内容默认即可）"
 labels: ["new-content"]
 body:
   - type: markdown
     attributes:
       value: |
         感谢您使用此模板提交内容！请填写以下信息。
-        
+
   - type: input
     id: department
     attributes:
       label: 部门名称
-      description: 请输入您所属的部门名称
-      placeholder: 例如：网络部
+      description: 请输入提交内容所属的部门名称，以 https://w1ndys.github.io/QFNUCyberWiki/ 首页的名字为准
+      placeholder: 例如：网络部、新媒体中心
     validations:
       required: true
-      
+
   - type: input
     id: content-title
     attributes:
@@ -25,7 +25,7 @@ body:
       placeholder: 例如：网络钓鱼防范指南
     validations:
       required: false
-      
+
   - type: input
     id: filename
     attributes:
@@ -34,7 +34,7 @@ body:
       placeholder: 例如：phishing-prevention-guide
     validations:
       required: false
-      
+
   - type: textarea
     id: markdown-content
     attributes:
@@ -42,15 +42,15 @@ body:
       description: 请在此处提供Markdown格式的主要内容
       placeholder: |
         ## 标题
-        
+
         正文内容...
-        
+
         ### 小标题
-        
+
         - 列表项1
         - 列表项2
-        
+
         更多内容...
       render: markdown
     validations:
-      required: false 
+      required: false
