@@ -199,6 +199,12 @@ jobs:
               repo: context.repo.repo,
               body: '❌ 错误：无法从Issue内容中提取必要信息。请确保包含以下必要字段：\n\n```\n### 部门名称\n<部门名称>\n\n### 文件名\n<文件名>\n\n### 主要内容\n```markdown\n<内容>\n```\n```'
             })
+            await github.rest.issues.updateComment({
+              comment_id: ${{ steps.initial-comment.outputs.comment_id }},
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '❌ 错误：无法从Issue内容中提取必要信息。请确保包含以下必要字段：\n\n```\n### 部门名称\n<部门名称>\n\n### 文件名\n<文件名>\n\n### 主要内容\n```markdown\n<内容>\n```\n```'
+            })
 
       - name: 匹配部门目录
         id: find-department
@@ -343,32 +349,6 @@ jobs:
               return { error: error.message };
             }
 
-      - name: 通知PR创建成功
-        if: ${{ success() && steps.create-pr-api.outcome == 'success' && contains(steps.create-pr-api.outputs.result, 'pr_number') }}
-        uses: actions/github-script@v6
-        with:
-          script: |
-            // 安全地解析JSON
-            let result;
-            try {
-              result = JSON.parse('${{ steps.create-pr-api.outputs.result }}');
-            } catch (error) {
-              console.log('Failed to parse PR result: ' + error.message);
-              return;
-            }
-
-            if (!result || !result.pr_number || !result.pr_url) {
-              console.log('Invalid PR result format');
-              return;
-            }
-
-            await github.rest.issues.updateComment({
-              comment_id: ${{ steps.initial-comment.outputs.comment_id }},
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `✅ 文件已成功生成！\n\nPull Request 已创建: [#${result.pr_number}](${result.pr_url})\n\n文件路径: \`${{ steps.generate-file.outputs.file_path }}\`\n\n当PR被合并时，此Issue将自动关闭，分支将自动删除。`
-            });
-
       - name: PR创建状态通知
         if: ${{ always() && (steps.create-pr-api.outcome == 'failure' || !contains(steps.create-pr-api.outputs.result, 'pr_number')) }}
         uses: actions/github-script@v6
@@ -389,7 +369,7 @@ jobs:
               comment_id: ${{ steps.initial-comment.outputs.comment_id }},
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `✅ 文件已成功生成并提交到分支 \`${{ steps.create-branch.outputs.branch_name }}\`！\n\n生成后的页面URL：https://w1ndys.github.io/QFNUCyberWiki/${{ steps.find-department.outputs.target_dir }}/${{ steps.generate-file.outputs.clean_filename }}.html`
+              body: `✅ 文件已成功生成并提交到分支 \`${{ steps.create-branch.outputs.branch_name }}\`！\n\n生成后的页面URL：https://w1ndys.github.io/QFNUCyberWiki/${{ steps.find-department.outputs.target_dir }}/${{ steps.generate-file.outputs.clean_filename }}.html\n\n当PR被合并时，此Issue将自动关闭，分支将自动删除。`
             });
 
       - name: 检查部门是否存在
@@ -397,6 +377,12 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
+            await github.rest.issues.updateComment({
+              comment_id: ${{ steps.initial-comment.outputs.comment_id }},
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '❌ 错误：未找到与部门名称匹配的目录，请检查部门名称是否正确'
+            })
             await github.rest.issues.updateComment({
               comment_id: ${{ steps.initial-comment.outputs.comment_id }},
               owner: context.repo.owner,
