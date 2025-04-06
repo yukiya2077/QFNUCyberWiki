@@ -412,7 +412,7 @@ jobs:
           FILENAME: ${{ steps.generate-file.outputs.clean_filename }}
           TITLE: ${{ steps.extract-fields.outputs.TITLE }}
           TARGET_DIR: ${{ steps.find-department.outputs.target_dir }}
-          EXISTING_PR: ${{ steps.check-existing-pr.outputs.result }}
+          EXISTING_PR: ${{ steps.check-existing-pr.outputs.script-result }}
           IS_EDIT: ${{ steps.trigger-type.outputs.is_edit }}
           REPO_URL: ${{ format('https://github.com/{0}', github.repository) }}
         with:
@@ -506,12 +506,13 @@ jobs:
                     }
                   }
                 }
-                
-                return prNumber.toString();
-              } catch (error) {
-                console.log(`处理PR时出错: ${error.message}`);
-                throw error;
               }
+              
+              return prNumber.toString();
+            } catch (error) {
+              console.log(`处理PR时出错: ${error.message}`);
+              throw error;
+            }
 
       # 13. 更新评论通知结果
       - name: 更新处理结果评论
@@ -526,7 +527,7 @@ jobs:
         with:
           script: |
             const prNumber = '${{ steps.create-pr.outputs.result }}';
-            const existingPr = '${{ steps.check-existing-pr.outputs.result }}';
+            const existingPr = '${{ steps.check-existing-pr.outputs.script-result }}';
             const success = prNumber && prNumber !== '';
             const isEdit = '${{ steps.trigger-type.outputs.is_edit }}' === 'true';
             
