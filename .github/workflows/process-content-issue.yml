@@ -1,53 +1,128 @@
 name: Process Department Content
 on:
   issues:
-    types: [labeled, edited, opened]
+    types: [labeled, edited]
+
+# 添加并发控制，防止同一Issue被多次处理
+concurrency:
+  group: issue-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
   pull-requests: write
   issues: write
+
 jobs:
   generate-content:
     runs-on: ubuntu-latest
-    if: contains(github.event.issue.labels.*.name, 'new-content') && !contains(github.event.issue.labels.*.name, '处理中')
+    # 确保只有带有new-content标签的Issue才会触发，分两种情况：1. 新标记时无处理中标签 2. 编辑时有处理完成标签
+    if: |
+      (contains(github.event.issue.labels.*.name, 'new-content') && 
+      ((github.event.action == 'labeled' && !contains(github.event.issue.labels.*.name, '处理中')) || 
+      (github.event.action == 'edited' && contains(github.event.issue.labels.*.name, '处理完成'))))
+
     steps:
-      # 添加处理中标签以防止重复处理
+      # 添加新步骤：记录触发类型
+      - name: 记录触发类型
+        id: trigger-type
+        run: |
+          if [ "${{ github.event.action }}" = "edited" ]; then
+            echo "is_edit=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_edit=false" >> $GITHUB_OUTPUT
+          fi
+
+      # 1. 添加处理中标签并添加短暂延迟确保标签生效
       - name: 添加处理中标签
         uses: actions/github-script@v6
         with:
           script: |
+            // 如果是编辑触发，先移除处理完成标签
+            if ('${{ steps.trigger-type.outputs.is_edit }}' === 'true') {
+              try {
+                await github.rest.issues.removeLabel({
+                  issue_number: context.issue.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: '处理完成'
+                });
+              } catch (error) {
+                console.log('移除处理完成标签失败:', error.message);
+              }
+            }
+
             await github.rest.issues.addLabels({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
               labels: ['处理中']
             });
+            // 添加短暂延迟确保标签生效
+            await new Promise(resolve => setTimeout(resolve, 2000));
 
-      # 新增初始评论步骤
-      - name: 创建初始处理评论
+      # 2. 创建或更新处理评论
+      - name: 创建或更新处理评论
         id: initial-comment
         uses: actions/github-script@v6
         with:
           script: |
-            const result = await github.rest.issues.createComment({
+            let commentBody = '⏳ 正在处理您的请求，请稍候...';
+            if ('${{ steps.trigger-type.outputs.is_edit }}' === 'true') {
+              commentBody = '⏳ Issue已编辑，正在更新相关PR内容...';
+            }
+
+            // 查找是否已存在处理评论
+            const comments = await github.rest.issues.listComments({
               issue_number: context.issue.number,
               owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '⏳ 正在处理您的请求，请勿重复提交...'
+              repo: context.repo.repo
             });
-            core.setOutput('comment_id', result.data.id);
 
+            const processingComment = comments.data.find(comment => 
+              comment.body.includes('正在处理您的请求') || 
+              comment.body.includes('Issue已编辑') || 
+              comment.body.includes('文件已成功生成') ||
+              comment.body.includes('已更新现有PR')
+            );
+
+            let commentId;
+            if (processingComment) {
+              // 更新现有评论
+              await github.rest.issues.updateComment({
+                comment_id: processingComment.id,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: commentBody
+              });
+              commentId = processingComment.id;
+            } else {
+              // 创建新评论
+              const result = await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: commentBody
+              });
+              commentId = result.data.id;
+            }
+
+            return commentId;
+
+      # 3. 检出代码库
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      # 4. 安装必要工具
       - name: 安装依赖
         run: |
           sudo wget -O /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v4.35.1/yq_linux_amd64
           sudo chmod +x /usr/local/bin/yq
           pip install pyyaml
 
+      # 5. 从Issue内容提取字段
       - name: 提取模板字段
         id: extract-fields
         env:
@@ -73,90 +148,56 @@ jobs:
                   return None
                   
               marker = "### " + section_name
-              # 兼容表格中的格式
               alt_marker = "**" + section_name + "**"
               
               # 尝试找标准格式
               if marker in body:
-                  print(f"找到标准标记 '{marker}'")
-                  # 找到部分的开始
                   start = body.find(marker) + len(marker)
-                  
-                  # 找到下一个部分的开始（如果有）
                   next_section = body.find("###", start)
-                  if next_section != -1:
-                      section_content = body[start:next_section]
-                  else:
-                      section_content = body[start:]
-                  
-                  return section_content.strip()
+                  section_content = body[start:next_section].strip() if next_section != -1 else body[start:].strip()
+                  return section_content
               
-              # 尝试从表格提取（寻找"部门名称 科创部"这样的模式）
+              # 尝试从表格提取
               elif section_name + " " in body:
-                  print(f"尝试从表格提取 '{section_name}'")
                   pattern = r'(?:' + re.escape(section_name) + r'|' + re.escape(alt_marker) + r')\s+([^\n|]+)'
                   match = re.search(pattern, body)
                   if match:
-                      print(f"从表格模式提取到 '{section_name}': {match.group(1)}")
                       return match.group(1).strip()
               
-              print(f"警告: 未找到标记 '{marker}' 或表格中的 '{section_name}'")
               return None
               
           def extract_content(body):
               """提取内容 - 从第一个```markdown开始，到最后一个```结束"""
-              print("使用新的内容提取方法：从第一个```markdown到最后一个```")
-              
-              # 定位第一个 ```markdown 标记的位置
               markdown_start = body.find("```markdown")
               if markdown_start == -1:
-                  print("警告: 未找到```markdown标记")
                   return None
               
-              # 从第一个标记后跳过到下一行开始
               content_start = body.find("\n", markdown_start)
               if content_start == -1:
-                  print("警告: Markdown代码块格式异常（无法定位换行符）")
                   return None
-              content_start += 1  # 跳过换行符
+              content_start += 1
               
-              # 定位最后一个 ``` 标记的位置
               markdown_end = body.rfind("```")
               if markdown_end == -1 or markdown_end <= content_start:
-                  print("警告: 未找到结束的Markdown代码块标记")
                   return None
               
-              # 提取两者之间的内容并去除首尾空白字符
               content = body[content_start:markdown_end].strip()
-              
-              # 处理转义字符
               content = unescape_markdown(content)
               content = content.replace('\\n', '\n')
-              
-              print("成功提取内容，内容前100字符:", content[:100].replace("\n", "\\n") + ("..." if len(content) > 100 else ""))
               return content
 
           # 主程序
           body = os.environ.get("ISSUE_BODY", "")
-          print("Issue内容长度:", len(body))
-          print("Issue内容前300字符:", body[:300].replace("\n", "\\n") + ("..." if len(body) > 300 else ""))
 
           try:
-              # 尝试检测表格格式
-              if "|" in body and "-|-" in body:
-                  print("检测到可能的表格格式")
-              
-              # 提取各个部分
               department = extract_section(body, "部门名称")
               title = extract_section(body, "标题")
-              filename = extract_section(body, "文件名").replace(".md", "") # 去除文件后缀
+              filename = extract_section(body, "文件名")
               content = extract_content(body)
-              
-              print("提取结果:")
-              print(f"部门名称: {department}")
-              print(f"标题: {title}")
-              print(f"文件名: {filename}")
-              print(f"内容长度: {len(content) if content else 0}")
+
+              # 去掉文件名后缀
+              if filename and filename.endswith('.md'):
+                  filename = filename.replace('.md', '')
               
               # 验证必要字段
               missing = []
@@ -180,38 +221,36 @@ jobs:
                   f.write(f"CONTENT<<EOF_CONTENT\n{content}\nEOF_CONTENT\n")
           except Exception as e:
               print(f"提取过程中发生错误: {str(e)}")
-              import traceback
-              traceback.print_exc()
               sys.exit(1)
           EOF
 
-          # 执行提取脚本
           python extract.py
 
-      - name: 检查Issue解析失败
+      # 6. 处理提取失败的情况
+      - name: 处理提取失败
         if: ${{ failure() && steps.extract-fields.outcome == 'failure' }}
         uses: actions/github-script@v6
         with:
           script: |
             await github.rest.issues.updateComment({
-              comment_id: ${{ steps.initial-comment.outputs.comment_id }},
+              comment_id: ${{ steps.initial-comment.outputs.script-result }},
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: '❌ 错误：无法从Issue内容中提取必要信息。请确保包含以下必要字段：\n\n```\n### 部门名称\n<部门名称>\n\n### 文件名\n<文件名>\n\n### 主要内容\n```markdown\n<内容>\n```\n```'
-            })
-            await github.rest.issues.updateComment({
-              comment_id: ${{ steps.initial-comment.outputs.comment_id }},
+            });
+            await github.rest.issues.removeLabel({
+              issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '❌ 错误：无法从Issue内容中提取必要信息。请确保包含以下必要字段：\n\n```\n### 部门名称\n<部门名称>\n\n### 文件名\n<文件名>\n\n### 主要内容\n```markdown\n<内容>\n```\n```'
-            })
+              name: '处理中'
+            });
 
+      # 7. 匹配部门目录
       - name: 匹配部门目录
         id: find-department
         env:
           DEPARTMENT: ${{ steps.extract-fields.outputs.DEPARTMENT }}
         run: |
-          # 遍历 src 子目录查找匹配的 title
           BASE_DIR="src"
           TARGET_DIR=""
 
@@ -219,11 +258,10 @@ jobs:
             readme="$dir/README.md"
             if [ -f "$readme" ]; then
               frontmatter=$(sed -n '/^---$/,/^---$/p' $readme | head -n -1 | tail -n +2)
-              # 使用Python处理YAML前置内容，避免yq命令语法问题
-              title=$(python -c "import yaml; print(yaml.safe_load('''$frontmatter''').get('title', ''))")
+              title=$(python -c "import yaml; print(yaml.safe_load('''$frontmatter''').get('title', ''))"
               
               if [ "$title" = "$DEPARTMENT" ]; then
-                TARGET_DIR="${dir#*/}"  # 去除前面的 src/
+                TARGET_DIR="${dir#*/}"
                 break
               fi
             fi
@@ -236,6 +274,26 @@ jobs:
 
           echo "target_dir=$TARGET_DIR" >> $GITHUB_OUTPUT
 
+      # 8. 处理部门匹配失败
+      - name: 处理部门匹配失败
+        if: ${{ failure() && steps.find-department.outcome == 'failure' }}
+        uses: actions/github-script@v6
+        with:
+          script: |
+            await github.rest.issues.updateComment({
+              comment_id: ${{ steps.initial-comment.outputs.script-result }},
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '❌ 错误：未找到与部门名称"${{ steps.extract-fields.outputs.DEPARTMENT }}"匹配的目录，请检查部门名称是否正确'
+            });
+            await github.rest.issues.removeLabel({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: '处理中'
+            });
+
+      # 9. 生成文件
       - name: 生成文件
         id: generate-file
         env:
@@ -246,13 +304,19 @@ jobs:
           TARGET_DIR: ${{ steps.find-department.outputs.target_dir }}
           ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
         run: |
-          # 清理文件名并创建路径
           CLEAN_FILENAME=$(echo "$FILENAME" | tr ' ' '-' | tr -cd '[:alnum:]-_')
           FILE_PATH="src/$TARGET_DIR/${CLEAN_FILENAME}.md"
           echo "file_path=$FILE_PATH" >> $GITHUB_OUTPUT
           echo "clean_filename=$CLEAN_FILENAME" >> $GITHUB_OUTPUT
 
-          # 写入内容 - 使用YAML前置内容格式
+          # 检查文件是否已存在
+          if [ -f "$FILE_PATH" ]; then
+            echo "文件已存在，将更新内容"
+            echo "is_update=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_update=false" >> $GITHUB_OUTPUT
+          fi
+
           ARTICLE_TITLE="${TITLE:-来自 $DEPARTMENT 的投稿}"
           echo "---" > $FILE_PATH
           echo "title: $ARTICLE_TITLE" >> $FILE_PATH
@@ -264,63 +328,114 @@ jobs:
           echo "" >> $FILE_PATH
           echo "> 投稿人: [@$ISSUE_AUTHOR](https://github.com/$ISSUE_AUTHOR)" >> $FILE_PATH
 
+      # 10. 检查是否已有对应PR
+      - name: 检查现有PR
+        id: check-existing-pr
+        uses: actions/github-script@v6
+        with:
+          script: |
+            // 查找与当前Issue相关的PR
+            const pulls = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              head: `${context.repo.owner}:content-update/issue-${context.issue.number}`
+            });
+
+            if (pulls.data.length > 0) {
+              return pulls.data[0].number;
+            }
+
+            // 检查PR正文中是否包含当前Issue编号
+            const allPulls = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open'
+            });
+
+            for (const pr of allPulls.data) {
+              if (pr.body && pr.body.includes(`closes #${context.issue.number}`)) {
+                return pr.number;
+              }
+            }
+
+            return null;
+
+      # 11. 创建分支并提交更改
       - name: 创建分支并提交更改
         id: create-branch
+        # 修改条件：当是编辑触发时，始终执行此步骤
+        if: ${{ !steps.check-existing-pr.outputs.script-result || steps.trigger-type.outputs.is_edit == 'true' }}
         env:
           FILENAME: ${{ steps.generate-file.outputs.clean_filename }}
           FILE_PATH: ${{ steps.generate-file.outputs.file_path }}
+          IS_UPDATE: ${{ steps.generate-file.outputs.is_update }}
+          IS_EDIT: ${{ steps.trigger-type.outputs.is_edit }}
         run: |
-          # 使用时间戳创建唯一分支名
-          TIMESTAMP=$(date +%Y%m%d%H%M%S)
-          BRANCH_NAME="content-update/$FILENAME-$TIMESTAMP"
-          echo "使用分支名: $BRANCH_NAME"
-
-          # 检查分支是否已存在
-          git fetch origin
-          if git show-ref --verify --quiet "refs/remotes/origin/$BRANCH_NAME"; then
-            echo "分支 $BRANCH_NAME 已存在，使用新名称"
-            BRANCH_NAME="content-update/$FILENAME-$TIMESTAMP-$RANDOM"
-            echo "新分支名: $BRANCH_NAME"
-          fi
+          # 使用固定格式的分支名
+          BRANCH_NAME="content-update/issue-${{ github.event.issue.number }}"
 
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout -b $BRANCH_NAME
 
-          # 只添加生成的文件，不添加脚本文件
+          # 检查分支是否已存在
+          if git show-ref --verify --quiet "refs/heads/$BRANCH_NAME"; then
+            echo "分支已存在，将直接使用"
+            git checkout $BRANCH_NAME
+          else
+            echo "创建新分支"
+            git checkout -b $BRANCH_NAME
+          fi
+
           git add "$FILE_PATH"
-          git commit -m "添加内容: $FILENAME (部门: ${{ steps.extract-fields.outputs.DEPARTMENT }})"
 
-          # 使用--force确保推送成功
-          git push --force origin $BRANCH_NAME
+          if [ "$IS_EDIT" = "true" ]; then
+            git commit -m "更新内容(由Issue编辑触发): $FILENAME (部门: ${{ steps.extract-fields.outputs.DEPARTMENT }}) [Issue #${{ github.event.issue.number }}]"
+          elif [ "$IS_UPDATE" = "true" ]; then
+            git commit -m "更新内容: $FILENAME (部门: ${{ steps.extract-fields.outputs.DEPARTMENT }}) [Issue #${{ github.event.issue.number }}]"
+          else
+            git commit -m "添加内容: $FILENAME (部门: ${{ steps.extract-fields.outputs.DEPARTMENT }}) [Issue #${{ github.event.issue.number }}]"
+          fi
 
-          # 输出分支名
+          git push origin $BRANCH_NAME --force
+
           echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
           echo "repo_url=https://github.com/${{ github.repository }}" >> $GITHUB_OUTPUT
 
-      - name: 使用GitHub API创建PR
-        id: create-pr-api
-        continue-on-error: true
+      # 12. 创建或更新Pull Request
+      - name: 创建或更新Pull Request
+        id: create-pr
         uses: actions/github-script@v6
         env:
-          BRANCH_NAME: ${{ steps.create-branch.outputs.branch_name }}
+          BRANCH_NAME: ${{ steps.create-branch.outputs.branch_name || 'content-update/issue-' + github.event.issue.number }}
           DEPARTMENT: ${{ steps.extract-fields.outputs.DEPARTMENT }}
           FILENAME: ${{ steps.generate-file.outputs.clean_filename }}
           TITLE: ${{ steps.extract-fields.outputs.TITLE }}
           TARGET_DIR: ${{ steps.find-department.outputs.target_dir }}
+          EXISTING_PR: ${{ steps.check-existing-pr.outputs.script-result }}
+          IS_EDIT: ${{ steps.trigger-type.outputs.is_edit }}
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const title = `内容投稿: ${process.env.DEPARTMENT} - ${process.env.TITLE || process.env.FILENAME}`;
-            // 添加关闭Issue的关键词
             const body = `由 Issue #${context.issue.number} 自动生成
             部门目录: \`src/${process.env.TARGET_DIR}\`
-
+            ${process.env.IS_EDIT === 'true' ? '> 📝 此PR已根据Issue编辑内容更新\n' : ''}
             ---
 
             closes #${context.issue.number}`;
 
-            try {
+            if (process.env.EXISTING_PR) {
+              console.log(`更新现有PR #${process.env.EXISTING_PR}`);
+              await github.rest.pulls.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: process.env.EXISTING_PR,
+                title: title,
+                body: body
+              });
+              return process.env.EXISTING_PR;
+            } else {
+              console.log('创建新PR');
               const result = await github.rest.pulls.create({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -329,74 +444,46 @@ jobs:
                 head: process.env.BRANCH_NAME,
                 base: 'main'
               });
-              
-              console.log(`PR created: ${result.data.html_url}`);
-              
-              // 设置PR合并后自动删除分支
-              await github.rest.pulls.update({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: result.data.number,
-                maintainer_can_modify: true
-              });
-              
-              return { 
-                pr_number: result.data.number,
-                pr_url: result.data.html_url
-              };
-            } catch (error) {
-              console.log(`Error creating PR: ${error.message}`);
-              return { error: error.message };
+              return result.data.number;
             }
 
-      - name: PR创建状态通知
-        if: ${{ always() && (steps.create-pr-api.outcome == 'failure' || !contains(steps.create-pr-api.outputs.result, 'pr_number')) }}
-        uses: actions/github-script@v6
-        with:
-          script: |
-            // 尝试安全地获取错误信息
-            let errorMsg = '未知错误';
-            try {
-              const result = JSON.parse('${{ steps.create-pr-api.outputs.result || '{"error":"未知错误"}' }}');
-              if (result && result.error) {
-                errorMsg = result.error;
-              }
-            } catch (error) {
-              console.log('Failed to parse error result: ' + error.message);
-            }
-
-            await github.rest.issues.updateComment({
-              comment_id: ${{ steps.initial-comment.outputs.comment_id }},
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `✅ 文件已成功生成并提交到分支 \`${{ steps.create-branch.outputs.branch_name }}\`！\n\n你可以在合并后3分钟左右访问生成后的页面URL：https://w1ndys.github.io/QFNUCyberWiki/${{ steps.find-department.outputs.target_dir }}/${{ steps.generate-file.outputs.clean_filename }}.html\n\n当PR被合并时，此Issue将自动关闭，分支将自动删除。\n\n${steps.create-pr-api.outputs.result && JSON.parse(steps.create-pr-api.outputs.result).pr_url ? `Pull Request地址：${JSON.parse(steps.create-pr-api.outputs.result).pr_url}\nPull Request文件修改内容地址：${JSON.parse(steps.create-pr-api.outputs.result).pr_url}/files` : '❌ PR创建失败，请联系管理员检查日志'}`
-            });
-
-      - name: 检查部门是否存在
-        if: ${{ failure() && steps.find-department.outcome == 'failure' }}
-        uses: actions/github-script@v6
-        with:
-          script: |
-            await github.rest.issues.updateComment({
-              comment_id: ${{ steps.initial-comment.outputs.comment_id }},
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '❌ 错误：未找到与部门名称匹配的目录，请检查部门名称是否正确'
-            })
-            await github.rest.issues.updateComment({
-              comment_id: ${{ steps.initial-comment.outputs.comment_id }},
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '❌ 错误：未找到与部门名称匹配的目录，请检查部门名称是否正确'
-            })
-
-      # 无论成功失败，处理完成后更新标签
-      - name: 更新处理状态标签
+      # 13. 更新评论通知结果
+      - name: 更新处理结果评论
         if: always()
         uses: actions/github-script@v6
         with:
           script: |
-            // 移除处理中标签
+            const prNumber = '${{ steps.create-pr.outputs.script-result }}';
+            const existingPr = '${{ steps.check-existing-pr.outputs.script-result }}';
+            const success = prNumber && prNumber !== '';
+            const isEdit = '${{ steps.trigger-type.outputs.is_edit }}' === 'true';
+
+            if (success) {
+              let message;
+              if (isEdit) {
+                message = `✅ Issue编辑内容已更新到PR #${prNumber}\n\n你可以在下面链接中查看Pull Request的详细内容和修改情况\n${process.env.REPO_URL}/pull/${prNumber}\n\n你可以在合并后3分钟左右访问生成后的页面URL：https://w1ndys.github.io/QFNUCyberWiki/${{ steps.find-department.outputs.target_dir }}/${{ steps.generate-file.outputs.clean_filename }}.html`;
+              } else if (existingPr) {
+                message = `♻️ 已更新现有PR #${prNumber} 内容`;
+              } else {
+                message = `✅ 文件已成功生成并提交到分支 \`${{ steps.create-branch.outputs.branch_name || 'content-update/issue-' + github.event.issue.number }}\`！\n\nPR: #${prNumber}\n\n你可以在下面链接中查看Pull Request的详细内容和修改情况\n${process.env.REPO_URL}/pull/${prNumber}\n\n你可以在合并后3分钟左右访问生成后的页面URL：https://w1ndys.github.io/QFNUCyberWiki/${{ steps.find-department.outputs.target_dir }}/${{ steps.generate-file.outputs.clean_filename }}.html\n\n当PR被合并时，此Issue将自动关闭。`;
+              }
+
+              await github.rest.issues.updateComment({
+                comment_id: ${{ steps.initial-comment.outputs.script-result }},
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: message
+              });
+            } else {
+              await github.rest.issues.updateComment({
+                comment_id: ${{ steps.initial-comment.outputs.script-result }},
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: '❌ 处理过程中发生错误，请检查Issue格式是否正确或联系管理员'
+              });
+            }
+
+            // 更新标签状态
             try {
               await github.rest.issues.removeLabel({
                 issue_number: context.issue.number,
@@ -404,14 +491,15 @@ jobs:
                 repo: context.repo.repo,
                 name: '处理中'
               });
-            } catch (error) {
-              console.log('移除处理中标签失败:', error.message);
-            }
 
-            // 添加处理完成标签
-            await github.rest.issues.addLabels({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              labels: ['处理完成']
-            });
+              if (success) {
+                await github.rest.issues.addLabels({
+                  issue_number: context.issue.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  labels: ['处理完成']
+                });
+              }
+            } catch (error) {
+              console.log('更新标签失败:', error.message);
+            }
