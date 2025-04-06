@@ -453,38 +453,78 @@ jobs:
         if: always()
         uses: actions/github-script@v6
         env:
-          REPO_URL: ${{ format('https://github.com/{0}/{1}', github.repository_owner, github.repository) }}
+          REPO_URL: ${{ format('https://github.com/{0}', github.repository) }}
           BRANCH_NAME: ${{ steps.create-branch.outputs.branch_name || format('content-update/issue-{0}', github.event.issue.number) }}
+          DEPARTMENT_DIR: ${{ steps.find-department.outputs.target_dir }}
+          FILENAME: ${{ steps.generate-file.outputs.clean_filename }}
+          COMMENT_ID: ${{ steps.initial-comment.outputs.result }}
         with:
           script: |
-            const prNumber = '${{ steps.create-pr.outputs.script-result }}';
-            const existingPr = '${{ steps.check-existing-pr.outputs.script-result }}';
+            const prNumber = '${{ steps.create-pr.outputs.result }}';
+            const existingPr = '${{ steps.check-existing-pr.outputs.result }}';
             const success = prNumber && prNumber !== '';
             const isEdit = '${{ steps.trigger-type.outputs.is_edit }}' === 'true';
-
+            
+            // 获取评论ID
+            const commentId = process.env.COMMENT_ID;
+            
             if (success) {
               let message;
               if (isEdit) {
-                message = `✅ Issue编辑内容已更新到PR #${prNumber}\n\n你可以在下面链接中查看Pull Request的详细内容和修改情况\n${process.env.REPO_URL}/pull/${prNumber}\n\n你可以在合并后3分钟左右访问生成后的页面URL：https://w1ndys.github.io/QFNUCyberWiki/${{ steps.find-department.outputs.target_dir }}/${{ steps.generate-file.outputs.clean_filename }}.html`;
+                message = `✅ Issue编辑内容已更新到PR #${prNumber}\n\n你可以在下面链接中查看Pull Request的详细内容和修改情况\n${process.env.REPO_URL}/pull/${prNumber}\n\n你可以在合并后3分钟左右访问生成后的页面URL：https://w1ndys.github.io/QFNUCyberWiki/${process.env.DEPARTMENT_DIR}/${process.env.FILENAME}.html`;
               } else if (existingPr) {
                 message = `♻️ 已更新现有PR #${prNumber} 内容`;
               } else {
-                message = `✅ 文件已成功生成并提交到分支 \`${process.env.BRANCH_NAME}\`！\n\nPR: #${prNumber}\n\n你可以在合并后3分钟左右访问生成后的页面URL：https://w1ndys.github.io/QFNUCyberWiki/${{ steps.find-department.outputs.target_dir }}/${{ steps.generate-file.outputs.clean_filename }}.html\n\n当PR被合并时，此Issue将自动关闭。`;
+                message = `✅ 文件已成功生成并提交到分支 \`${process.env.BRANCH_NAME}\`！\n\nPR: #${prNumber}\n\n你可以在合并后3分钟左右访问生成后的页面URL：https://w1ndys.github.io/QFNUCyberWiki/${process.env.DEPARTMENT_DIR}/${process.env.FILENAME}.html\n\n当PR被合并时，此Issue将自动关闭。`;
               }
 
-              await github.rest.issues.updateComment({
-                comment_id: ${{ steps.initial-comment.outputs.script-result }},
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: message
-              });
+              try {
+                if (commentId) {
+                  await github.rest.issues.updateComment({
+                    comment_id: commentId,
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    body: message
+                  });
+                } else {
+                  await github.rest.issues.createComment({
+                    issue_number: context.issue.number,
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    body: message
+                  });
+                }
+              } catch (error) {
+                console.log('更新评论失败:', error.message);
+                
+                // 尝试创建新评论
+                await github.rest.issues.createComment({
+                  issue_number: context.issue.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: message
+                });
+              }
             } else {
-              await github.rest.issues.updateComment({
-                comment_id: ${{ steps.initial-comment.outputs.script-result }},
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: '❌ 处理过程中发生错误，请检查Issue格式是否正确或联系管理员'
-              });
+              try {
+                if (commentId) {
+                  await github.rest.issues.updateComment({
+                    comment_id: commentId,
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    body: '❌ 处理过程中发生错误，请检查Issue格式是否正确或联系管理员'
+                  });
+                } else {
+                  await github.rest.issues.createComment({
+                    issue_number: context.issue.number,
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    body: '❌ 处理过程中发生错误，请检查Issue格式是否正确或联系管理员'
+                  });
+                }
+              } catch (error) {
+                console.log('更新错误评论失败:', error.message);
+              }
             }
 
             // 更新标签状态
