@@ -16,11 +16,11 @@ permissions:
 jobs:
   generate-content:
     runs-on: ubuntu-latest
-    # 确保只有带有new-content标签的Issue才会触发，分两种情况：1. 新标记时无处理中标签 2. 编辑时有处理完成标签
+    # 确保只有带有new-content标签的Issue才会触发
     if: |
-      (contains(github.event.issue.labels.*.name, 'new-content') && 
-      ((github.event.action == 'labeled' && !contains(github.event.issue.labels.*.name, '处理中')) || 
-      (github.event.action == 'edited' && contains(github.event.issue.labels.*.name, '处理完成'))))
+      contains(github.event.issue.labels.*.name, 'new-content') && 
+      (github.event.action == 'labeled' && !contains(github.event.issue.labels.*.name, '处理中')) || 
+      (github.event.action == 'edited' && contains(github.event.issue.labels.*.name, 'new-content'))
 
     steps:
       # 添加新步骤：记录触发类型
@@ -407,14 +407,13 @@ jobs:
         id: create-pr
         uses: actions/github-script@v6
         env:
-          BRANCH_NAME: ${{ steps.create-branch.outputs.branch_name || format('content-update/issue-{0}', github.event.issue.number) }}
+          BRANCH_NAME: ${{ steps.create-branch.outputs.branch_name || 'content-update/issue-' + github.event.issue.number }}
           DEPARTMENT: ${{ steps.extract-fields.outputs.DEPARTMENT }}
           FILENAME: ${{ steps.generate-file.outputs.clean_filename }}
           TITLE: ${{ steps.extract-fields.outputs.TITLE }}
           TARGET_DIR: ${{ steps.find-department.outputs.target_dir }}
           EXISTING_PR: ${{ steps.check-existing-pr.outputs.script-result }}
           IS_EDIT: ${{ steps.trigger-type.outputs.is_edit }}
-          REPO_URL: ${{ format('https://github.com/{0}/{1}', github.repository_owner, github.repository) }}
         with:
           script: |
             const title = `内容投稿: ${process.env.DEPARTMENT} - ${process.env.TITLE || process.env.FILENAME}`;
@@ -452,9 +451,6 @@ jobs:
       - name: 更新处理结果评论
         if: always()
         uses: actions/github-script@v6
-        env:
-          BRANCH_NAME: ${{ steps.create-branch.outputs.branch_name || format('content-update/issue-{0}', github.event.issue.number) }}
-          REPO_URL: ${{ format('https://github.com/{0}/{1}', github.repository_owner, github.repository) }}
         with:
           script: |
             const prNumber = '${{ steps.create-pr.outputs.script-result }}';
@@ -469,7 +465,7 @@ jobs:
               } else if (existingPr) {
                 message = `♻️ 已更新现有PR #${prNumber} 内容`;
               } else {
-                message = `✅ 文件已成功生成并提交到分支 \`${process.env.BRANCH_NAME}\`！\n\nPR: #${prNumber}\n\n你可以在下面链接中查看Pull Request的详细内容和修改情况\n${process.env.REPO_URL}/pull/${prNumber}\n\n你可以在合并后3分钟左右访问生成后的页面URL：https://w1ndys.github.io/QFNUCyberWiki/${{ steps.find-department.outputs.target_dir }}/${{ steps.generate-file.outputs.clean_filename }}.html\n\n当PR被合并时，此Issue将自动关闭。`;
+                message = `✅ 文件已成功生成并提交到分支 \`${{ steps.create-branch.outputs.branch_name || 'content-update/issue-' + github.event.issue.number }}\`！\n\nPR: #${prNumber}\n\n你可以在合并后3分钟左右访问生成后的页面URL：https://w1ndys.github.io/QFNUCyberWiki/${{ steps.find-department.outputs.target_dir }}/${{ steps.generate-file.outputs.clean_filename }}.html\n\n当PR被合并时，此Issue将自动关闭。`;
               }
 
               await github.rest.issues.updateComment({
