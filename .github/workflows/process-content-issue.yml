@@ -412,9 +412,9 @@ jobs:
           FILENAME: ${{ steps.generate-file.outputs.clean_filename }}
           TITLE: ${{ steps.extract-fields.outputs.TITLE }}
           TARGET_DIR: ${{ steps.find-department.outputs.target_dir }}
-          EXISTING_PR: ${{ steps.check-existing-pr.outputs.script-result }}
+          EXISTING_PR: ${{ steps.check-existing-pr.outputs.result }}
           IS_EDIT: ${{ steps.trigger-type.outputs.is_edit }}
-          REPO_URL: ${{ format('https://github.com/{0}/{1}', github.repository_owner, github.event.repository.name) }}
+          REPO_URL: ${{ format('https://github.com/{0}', github.repository) }}
         with:
           script: |
             const title = `内容投稿: ${process.env.DEPARTMENT} - ${process.env.TITLE || process.env.FILENAME}`;
@@ -425,28 +425,93 @@ jobs:
 
             closes #${context.issue.number}`;
 
-            if (process.env.EXISTING_PR) {
-              console.log(`更新现有PR #${process.env.EXISTING_PR}`);
-              await github.rest.pulls.update({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: process.env.EXISTING_PR,
-                title: title,
-                body: body
-              });
-              return process.env.EXISTING_PR;
-            } else {
-              console.log('创建新PR');
-              const result = await github.rest.pulls.create({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                title: title,
-                body: body,
-                head: process.env.BRANCH_NAME,
-                base: 'main'
-              });
-              return result.data.number;
-            }
+            let prNumber;
+            
+            try {
+              if (process.env.EXISTING_PR) {
+                console.log(`更新现有PR #${process.env.EXISTING_PR}`);
+                await github.rest.pulls.update({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: process.env.EXISTING_PR,
+                  title: title,
+                  body: body
+                });
+                prNumber = process.env.EXISTING_PR;
+              } else {
+                // 再次检查是否有现有PR（通过分支名称）
+                const branchName = process.env.BRANCH_NAME;
+                const pulls = await github.rest.pulls.list({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  state: 'open',
+                  head: `${context.repo.owner}:${branchName}`
+                });
+                
+                if (pulls.data.length > 0) {
+                  // 如果找到现有PR，则更新它
+                  console.log(`找到现有PR #${pulls.data[0].number}，正在更新...`);
+                  await github.rest.pulls.update({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    pull_number: pulls.data[0].number,
+                    title: title,
+                    body: body
+                  });
+                  prNumber = pulls.data[0].number;
+                } else {
+                  // 如果确实没有现有PR，则创建新PR
+                  console.log('创建新PR');
+                  try {
+                    const result = await github.rest.pulls.create({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      title: title,
+                      body: body,
+                      head: branchName,
+                      base: 'main'
+                    });
+                    prNumber = result.data.number;
+                  } catch (error) {
+                    // 如果创建失败，尝试再次查找可能存在的PR
+                    if (error.status === 422) {
+                      console.log('创建PR失败，尝试查找已存在的PR...');
+                      const allPulls = await github.rest.pulls.list({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        state: 'open'
+                      });
+                      
+                      // 查找任何可能关联的PR
+                      for (const pr of allPulls.data) {
+                        if (pr.head.ref === branchName || (pr.body && pr.body.includes(`closes #${context.issue.number}`))) {
+                          console.log(`找到关联PR #${pr.number}，将使用该PR`);
+                          await github.rest.pulls.update({
+                            owner: context.repo.owner,
+                            repo: context.repo.repo,
+                            pull_number: pr.number,
+                            title: title,
+                            body: body
+                          });
+                          prNumber = pr.number;
+                          break;
+                        }
+                      }
+                      
+                      if (!prNumber) {
+                        throw new Error(`无法创建或找到关联的PR: ${error.message}`);
+                      }
+                    } else {
+                      throw error;
+                    }
+                  }
+                }
+                
+                return prNumber.toString();
+              } catch (error) {
+                console.log(`处理PR时出错: ${error.message}`);
+                throw error;
+              }
 
       # 13. 更新评论通知结果
       - name: 更新处理结果评论
