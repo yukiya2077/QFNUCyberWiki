@@ -258,7 +258,7 @@ jobs:
             readme="$dir/README.md"
             if [ -f "$readme" ]; then
               frontmatter=$(sed -n '/^---$/,/^---$/p' $readme | head -n -1 | tail -n +2)
-              title=$(python -c "import yaml; print(yaml.safe_load('''$frontmatter''').get('title', ''))"
+              title=$(python -c "import yaml; print(yaml.safe_load('''$frontmatter''').get('title', ''))")
               
               if [ "$title" = "$DEPARTMENT" ]; then
                 TARGET_DIR="${dir#*/}"
