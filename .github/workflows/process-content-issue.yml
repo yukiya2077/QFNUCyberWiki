@@ -526,9 +526,10 @@ jobs:
           COMMENT_ID: ${{ steps.initial-comment.outputs.result }}
         with:
           script: |
-            const prNumber = '${{ steps.create-pr.outputs.result }}';
-            const existingPr = '${{ steps.check-existing-pr.outputs.script-result }}';
-            const success = prNumber && prNumber !== '';
+            // 去除引号，确保PR号是纯数字
+            const prNumber = ${{ steps.create-pr.outputs.result || 'null' }};
+            const existingPr = ${{ steps.check-existing-pr.outputs.script-result || 'null' }};
+            const success = prNumber && prNumber !== null;
             const isEdit = '${{ steps.trigger-type.outputs.is_edit }}' === 'true';
             
             // 获取评论ID
