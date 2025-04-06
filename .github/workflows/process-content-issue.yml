@@ -407,13 +407,14 @@ jobs:
         id: create-pr
         uses: actions/github-script@v6
         env:
-          BRANCH_NAME: ${{ steps.create-branch.outputs.branch_name || 'content-update/issue-' + github.event.issue.number }}
+          BRANCH_NAME: ${{ steps.create-branch.outputs.branch_name || format('content-update/issue-{0}', github.event.issue.number) }}
           DEPARTMENT: ${{ steps.extract-fields.outputs.DEPARTMENT }}
           FILENAME: ${{ steps.generate-file.outputs.clean_filename }}
           TITLE: ${{ steps.extract-fields.outputs.TITLE }}
           TARGET_DIR: ${{ steps.find-department.outputs.target_dir }}
           EXISTING_PR: ${{ steps.check-existing-pr.outputs.script-result }}
           IS_EDIT: ${{ steps.trigger-type.outputs.is_edit }}
+          REPO_URL: ${{ format('https://github.com/{0}/{1}', github.repository_owner, github.event.repository.name) }}
         with:
           script: |
             const title = `内容投稿: ${process.env.DEPARTMENT} - ${process.env.TITLE || process.env.FILENAME}`;
@@ -451,6 +452,9 @@ jobs:
       - name: 更新处理结果评论
         if: always()
         uses: actions/github-script@v6
+        env:
+          REPO_URL: ${{ format('https://github.com/{0}/{1}', github.repository_owner, github.event.repository.name) }}
+          BRANCH_NAME: ${{ steps.create-branch.outputs.branch_name || format('content-update/issue-{0}', github.event.issue.number) }}
         with:
           script: |
             const prNumber = '${{ steps.create-pr.outputs.script-result }}';
@@ -465,7 +469,7 @@ jobs:
               } else if (existingPr) {
                 message = `♻️ 已更新现有PR #${prNumber} 内容`;
               } else {
-                message = `✅ 文件已成功生成并提交到分支 \`${{ steps.create-branch.outputs.branch_name || 'content-update/issue-' + github.event.issue.number }}\`！\n\nPR: #${prNumber}\n\n你可以在合并后3分钟左右访问生成后的页面URL：https://w1ndys.github.io/QFNUCyberWiki/${{ steps.find-department.outputs.target_dir }}/${{ steps.generate-file.outputs.clean_filename }}.html\n\n当PR被合并时，此Issue将自动关闭。`;
+                message = `✅ 文件已成功生成并提交到分支 \`${process.env.BRANCH_NAME}\`！\n\nPR: #${prNumber}\n\n你可以在合并后3分钟左右访问生成后的页面URL：https://w1ndys.github.io/QFNUCyberWiki/${{ steps.find-department.outputs.target_dir }}/${{ steps.generate-file.outputs.clean_filename }}.html\n\n当PR被合并时，此Issue将自动关闭。`;
               }
 
               await github.rest.issues.updateComment({
