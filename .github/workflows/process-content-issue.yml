@@ -539,11 +539,11 @@ jobs:
             if (success) {
               let message;
               if (isEdit) {
-                message = `✅ Issue编辑内容已更新到PR #${prNumber}\n\n你可以在下面链接中查看Pull Request的详细内容和修改情况\n${process.env.REPO_URL}/pull/${prNumber}\n\n你可以在合并后3分钟左右访问生成后的页面URL：https://w1ndys.github.io/QFNUCyberWiki/${process.env.DEPARTMENT_DIR}/${process.env.FILENAME}.html`;
+                message = `✅ Issue编辑内容已更新到PR #${prNumber}\n\n你可以在下面链接中查看Pull Request的详细内容和修改情况\n${process.env.REPO_URL}/pull/${prNumber}\n\n直接编辑文件: ${process.env.REPO_URL}/edit/${process.env.BRANCH_NAME}/src/${process.env.DEPARTMENT_DIR}/${process.env.FILENAME}.md\n\n查看文件: ${process.env.REPO_URL}/blob/${process.env.BRANCH_NAME}/src/${process.env.DEPARTMENT_DIR}/${process.env.FILENAME}.md\n\n你可以在合并后3分钟左右访问生成后的页面URL：https://w1ndys.github.io/QFNUCyberWiki/${process.env.DEPARTMENT_DIR}/${process.env.FILENAME}.html`;
               } else if (existingPr) {
-                message = `♻️ 已更新现有PR [#${prNumber}](${process.env.REPO_URL}/pull/${prNumber}) 内容`;
+                message = `♻️ 已更新现有PR [#${prNumber}](${process.env.REPO_URL}/pull/${prNumber}) 内容\n\n直接编辑文件: ${process.env.REPO_URL}/edit/${process.env.BRANCH_NAME}/src/${process.env.DEPARTMENT_DIR}/${process.env.FILENAME}.md\n\n查看文件: ${process.env.REPO_URL}/blob/${process.env.BRANCH_NAME}/src/${process.env.DEPARTMENT_DIR}/${process.env.FILENAME}.md`;
               } else {
-                message = `✅ 文件已成功生成并提交到分支 [\`${process.env.BRANCH_NAME}\`](${process.env.REPO_URL}/tree/${process.env.BRANCH_NAME})！\n\nPR: [#${prNumber}](${process.env.REPO_URL}/pull/${prNumber})\n\n你可以在合并后3分钟左右访问生成后的页面URL：https://w1ndys.github.io/QFNUCyberWiki/${process.env.DEPARTMENT_DIR}/${process.env.FILENAME}.html\n\n当PR被合并时，此Issue将自动关闭。`;
+                message = `✅ 文件已成功生成并提交到分支 [\`${process.env.BRANCH_NAME}\`](${process.env.REPO_URL}/tree/${process.env.BRANCH_NAME})！\n\nPR: [#${prNumber}](${process.env.REPO_URL}/pull/${prNumber})\n\n直接编辑文件: ${process.env.REPO_URL}/edit/${process.env.BRANCH_NAME}/src/${process.env.DEPARTMENT_DIR}/${process.env.FILENAME}.md\n\n查看文件: ${process.env.REPO_URL}/blob/${process.env.BRANCH_NAME}/src/${process.env.DEPARTMENT_DIR}/${process.env.FILENAME}.md\n\n你可以在合并后3分钟左右访问生成后的页面URL：https://w1ndys.github.io/QFNUCyberWiki/${process.env.DEPARTMENT_DIR}/${process.env.FILENAME}.html\n\n当PR被合并时，此Issue将自动关闭。`;
               }
 
               try {
