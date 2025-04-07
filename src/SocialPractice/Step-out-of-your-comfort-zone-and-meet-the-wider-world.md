@@ -2,7 +2,7 @@
 title: 走出舒适圈，遇见更广阔的世界
 ---
 
-# “走出舒适圈，遇见更广阔的世界”：寒暑假社会实践等你加入:fa-hand-o-right:
+# "走出舒适圈，遇见更广阔的世界"：寒暑假社会实践等你加入 👉
 
 社会实践活动是我校第二课堂的**核心环节**，通过以下形式开展：  
 - 🏘️ 社区服务  
@@ -16,7 +16,7 @@ title: 走出舒适圈，遇见更广阔的世界
 
 > 此活动不仅是假期生活的`重要组成部分`，更是学生全面发展的**必修课程**。
 
-## 一、报名流程:fa-comment:
+## 一、报名流程 💬
 
 
 ### 1. 选人组队
@@ -40,7 +40,7 @@ title: 走出舒适圈，遇见更广阔的世界
 
 ---
 
-## 二、实践主题:fa-fax:
+## 二、实践主题 📠
 ### ✨ 五大实践主题 ✨
 #### 🔴 **学习宣传贯党的二十大精神**
 
@@ -57,17 +57,17 @@ title: 走出舒适圈，遇见更广阔的世界
 
 ---
 
-## 三、报名:fa-coffee:
+## 三、报名 ☕
 
-### 1. [“青鸟计划”](https://www.wjx.cn/vm/Psf1Q0o.aspx)专项报名链接：
-https://www.wjx.cn/vm/Psf1Q0o.aspx
+### 1. ["青鸟计划"](https://www.wjx.cn/vm/Psf1Q0o.aspx)专项报名链接：
+[https://www.wjx.cn/vm/Psf1Q0o.aspx](https://www.wjx.cn/vm/Psf1Q0o.aspx)
 
 ### 2. [大学生社区实践计划](https://www.wjx.cn/vm/mkihz22.aspx)专项报名链接：
-https://www.wjx.cn/vm/mkihz22.aspx
+[https://www.wjx.cn/vm/mkihz22.aspx](https://www.wjx.cn/vm/mkihz22.aspx)
 
 
-### 3.[“母校行”社会实践](https://www.wjx.cn/vm/mZ32R1C.aspx)专项报名链接：
-https://www.wjx.cn/vm/mZ32R1C.aspx
+### 3.["母校行"社会实践](https://www.wjx.cn/vm/mZ32R1C.aspx)专项报名链接：
+[https://www.wjx.cn/vm/mZ32R1C.aspx](https://www.wjx.cn/vm/mZ32R1C.aspx)
 
 ---
 ## 🌱 青春践初心，行动铸未来
