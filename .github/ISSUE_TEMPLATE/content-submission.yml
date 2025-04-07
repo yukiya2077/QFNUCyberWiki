@@ -30,7 +30,7 @@ body:
     id: filename
     attributes:
       label: 文件名
-      description: 请提供一个英文文件名（🚫不要有空格，⭕可用连字符，不需要带文件后缀，例如`hello`而不是`hello.md`）
+      description: 为这篇文章取一个间断的英文文件名（🚫不要有空格，⭕可用连字符，不需要带文件后缀，例如`hello`而不是`hello.md`）
       placeholder: 例如：phishing-prevention-guide
     validations:
       required: false
