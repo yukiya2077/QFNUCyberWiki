@@ -30,7 +30,7 @@ jobs:
       - name: Install Dependencies
         run: |
           pnpm config set registry https://registry.npmmirror.com/
-          pnpm install
+          pnpm i
 
       - name: Build
         run: |
