@@ -3,7 +3,7 @@ import navbar from "./navbar.js";
 import sidebar from "./sidebar.js";
 
 export default hopeTheme({
-  hostname: "https://easy-qfnu.top",
+  hostname: "https://qfnucyberwiki.w1ndys.top",
   darkmode: "switch",
   author: {
     name: "W1ndys",
