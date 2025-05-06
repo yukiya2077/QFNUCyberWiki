@@ -174,18 +174,20 @@ title: 学院新闻稿修炼手册："无从下笔"到丝滑逻辑输出🔥
   <div style="background: #FFFACD; padding: 20px; border-radius: 8px;">
     <h3 style="color: #DAA520; font-size: 18px;">🔍 求生欲自检清单</h3>
     <table style="width: 100%;">
-      <tr>
-        <td style="width: 30px;">1️⃣</td>
-        <td><input type="checkbox"> 姓名拼写核验（谐音字必查）</td>
-      </tr>
-      <tr>
-        <td>2️⃣</td>
-        <td><input type="checkbox"> 官职排序校验（院长＞副院长）</td>
-      </tr>
-      <tr>
-        <td>3️⃣</td>
-        <td><input type="checkbox"> 成果数据复核（避免"约/近"等虚词）</td>
-      </tr>
+      <tbody>
+        <tr>
+          <td style="width: 30px;">1️⃣</td>
+          <td><input type="checkbox"> 姓名拼写核验（谐音字必查）</td>
+        </tr>
+        <tr>
+          <td>2️⃣</td>
+          <td><input type="checkbox"> 官职排序校验（院长＞副院长）</td>
+        </tr>
+        <tr>
+          <td>3️⃣</td>
+          <td><input type="checkbox"> 成果数据复核（避免"约/近"等虚词）</td>
+        </tr>
+      </tbody>
     </table>
   </div>
   <div style="background: #FFE4E1; padding: 15px; text-align: center; border-radius: 0 0 10px 10px;">
