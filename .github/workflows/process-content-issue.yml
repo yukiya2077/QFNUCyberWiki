@@ -195,10 +195,13 @@ jobs:
               filename = extract_section(body, "文件名")
               content = extract_content(body)
 
-              # 去掉文件名后缀，自动替换文件名里的_为-，自动去掉空格
-              if filename and filename.endswith('.md'):
-                  filename = filename.replace('.md', '')
+              # 处理文件名：替换_为-，去掉空格，移除.md后缀
+              if filename:
+                  # 替换_为-，去掉空格
                   filename = filename.replace('_', '-').replace(' ', '')
+                  # 移除.md后缀 (如果存在)
+                  if filename.endswith('.md'):
+                      filename = filename.replace('.md', '')
               
               # 验证必要字段
               missing = []
@@ -391,11 +394,11 @@ jobs:
           git add "$FILE_PATH"
 
           if [ "$IS_EDIT" = "true" ]; then
-            git commit -m "更新内容(由Issue编辑触发): $FILENAME (部门: ${{ steps.extract-fields.outputs.DEPARTMENT }}) [Issue #${{ github.event.issue.number }}]"
+            git commit -m "Update content (triggered by issue edit): $FILENAME (部门: ${{ steps.extract-fields.outputs.DEPARTMENT }}) [Issue #${{ github.event.issue.number }}]"
           elif [ "$IS_UPDATE" = "true" ]; then
-            git commit -m "更新内容: $FILENAME (部门: ${{ steps.extract-fields.outputs.DEPARTMENT }}) [Issue #${{ github.event.issue.number }}]"
+            git commit -m "Update content: $FILENAME (部门: ${{ steps.extract-fields.outputs.DEPARTMENT }}) [Issue #${{ github.event.issue.number }}]"
           else
-            git commit -m "添加内容: $FILENAME (部门: ${{ steps.extract-fields.outputs.DEPARTMENT }}) [Issue #${{ github.event.issue.number }}]"
+            git commit -m "Add content: $FILENAME (部门: ${{ steps.extract-fields.outputs.DEPARTMENT }}) [Issue #${{ github.event.issue.number }}]"
           fi
 
           git push origin $BRANCH_NAME --force
