@@ -57,6 +57,8 @@ def get_md_files_titles(dept_dir):
 def main():
     # 项目根目录的src文件夹
     src_dir = os.path.join(os.getcwd(), "src")
+    output_filename = "部门文件统计报告.md"
+    markdown_content = []
 
     # 保存部门及其文件数量的字典
     departments = {}
@@ -88,27 +90,52 @@ def main():
     # 按文件数量从多到少排序
     sorted_departments = sorted(departments.items(), key=lambda x: x[1], reverse=True)
 
-    # 打印文件数量结果
-    print("部门文件统计（不包括README.md）：")
-    print("=" * 40)
-    print(f"{'部门名称':<20} {'文件数量':<10}")
-    print("-" * 40)
+    # 构建文件数量结果的Markdown表格
+    markdown_content.append("# 部门文件统计")
+    markdown_content.append("(不包括README.md)")
+    markdown_content.append("")  # Blank line
+    markdown_content.append("| 部门名称 | 文件数量 |")
+    markdown_content.append("| :------- | :------- |")
     for dept, count in sorted_departments:
-        print(f"{dept:<20} {count:<10}")
-    print("=" * 40)
+        markdown_content.append(f"| {dept} | {count} |")
+    markdown_content.append("")  # Blank line
 
-    # 打印每个部门的文件标题
-    print("\n各部门文件标题：")
-    print("=" * 60)
-    for dept, titles in department_titles.items():
-        if titles:
-            print(f"\n【{dept}】部门文件标题列表：")
-            print("-" * 60)
-            for file_name, title in titles:
-                print(f"{file_name:<30} {title}")
+    # 构建每个部门的文件标题的Markdown表格
+    markdown_content.append("# 各部门文件标题")
+    for dept, titles_list in department_titles.items():
+        markdown_content.append("")  # Blank line before department section
+        markdown_content.append(f"## 【{dept}】")
+        if titles_list:
+            markdown_content.append("")  # Blank line before table
+            markdown_content.append("| 文件名 | 标题 |")
+            markdown_content.append("| :----- | :--- |")
+            for file_name, title_text in titles_list:
+                safe_title_text = title_text.replace(
+                    "|", "\\|"
+                )  # Escape pipe characters
+                markdown_content.append(f"| {file_name} | {safe_title_text} |")
         else:
-            print(f"\n【{dept}】部门没有MD文件")
-    print("=" * 60)
+            markdown_content.append("")  # Blank line
+            markdown_content.append("该部门没有MD文件。")
+    markdown_content.append(
+        ""
+    )  # Final blank line ensures content block ends with a newline if not empty
+
+    # 将Markdown内容写入文件
+    file_body = "\n".join(markdown_content)  # Use actual newline character
+
+    # Ensure a single trailing newline for the file.
+    # If content is empty or only whitespace (e.g., after join if markdown_content was [""] or ["", ""])
+    if not file_body.strip():
+        file_body = "\n"
+    # Else, if there is content but it doesn't end with a newline, add one.
+    elif not file_body.endswith("\n"):
+        file_body += "\n"
+
+    with open(output_filename, "w", encoding="utf-8") as md_file:
+        md_file.write(file_body)
+
+    print(f"统计结果已保存到 {output_filename}")
 
 
 if __name__ == "__main__":
